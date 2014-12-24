@@ -1,11 +1,14 @@
 package com.sibigtroth.botimer;
 
 import android.app.Activity;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.util.Log;
 
+/*
+ TODO:
+ show ui feedback when hearing voice input (using onRmsChanged callback
+ clean up returned thinking response (e.g. By &quot;we&quot; do you mean you and me?)
+*/
 
 public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     Thinker.ThinkerCallback,
@@ -13,6 +16,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     Knower.KnowerCallback,
     Recognizer.RecognizerCallback {
 
+  private static final String TAG = "MainActivity";
   private Speaker mSpeaker;
   private Listener mListener;
   private Thinker mThinker;
@@ -29,10 +33,18 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
 
   private void initialize() {
     mSpeaker = new Speaker(this);
-    mListener = new Listener(this);
     mThinker = new Thinker(this);
-    mKnower = new Knower(this);
-    mRecognizer = new Recognizer(this);
+    //mKnower = new Knower(this);
+    //mRecognizer = new Recognizer(this);
+    mListener = new Listener(this);
+    mListener.listen();
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    mListener.shutDown();
+    mSpeaker.shutDown();
   }
 
   @Override
@@ -42,17 +54,23 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
 
   @Override
   public void onTtsSpeakDone() {
-
+    mListener.listen();
   }
 
   @Override
   public void onThinkingDone(String speechResponse) {
-
+    mSpeaker.speak(speechResponse);
   }
 
   @Override
   public void onSpeechRecognized(String recognizedSpeech) {
+    Log.d(TAG, "onSpeechRecognized:  " + recognizedSpeech);
+    mThinker.sayToBot(recognizedSpeech);
+  }
 
+  @Override
+  public void onNoRecognizedSpeechFound() {
+    mSpeaker.speak("I'm not sure I understood you");
   }
 
   @Override
