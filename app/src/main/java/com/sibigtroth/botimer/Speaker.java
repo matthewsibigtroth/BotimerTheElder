@@ -33,7 +33,6 @@ public class Speaker {
   ///////////////////////////
 
   public interface SpeakerCallback {
-
     public void onTtsSpeakStart();
 
     public void onTtsSpeakDone();
@@ -45,30 +44,11 @@ public class Speaker {
   ///////////////////////////
 
   public void speak(String textToSpeak) {
-    Log.d("foo", "Speak:    " + textToSpeak);
-    mTtsUtteranceMap.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "UniqueID");
-    // TODO: should use these arguments instead: (CharSequence text, int queueMode, Bundle params, String utteranceId)
-    mTextToSpeech.speak(textToSpeak, TextToSpeech.QUEUE_ADD, mTtsUtteranceMap);
-
+    Log.d("foo", "speak:    " + textToSpeak);
+    mTtsUtteranceMap.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "id");
+    mTextToSpeech.speak(textToSpeak, TextToSpeech.QUEUE_ADD, mTtsUtteranceMap); // api < 21
+    //mTextToSpeech.speak(textToSpeak, TextToSpeech.QUEUE_ADD, null, "id"); // api >= 21
   }
-
-  /*
-  public void speakAfterDelay(final String textToSpeak, int delay)
-  {
-      Looper.prepare();
-      Handler delayHandler= new Handler();
-      Runnable r=new Runnable()
-      {
-          @Override
-          public void run()
-          {
-              speak(textToSpeak);
-          }
-
-      };
-      delayHandler.postDelayed(r, delay);
-  }
-  */
 
   public void shutDown() {
     mTextToSpeech.shutdown();
