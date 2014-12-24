@@ -32,6 +32,8 @@ public class Listener {
     public void onSpeechRecognized(String recognizedSpeech);
 
     public void onNoRecognizedSpeechFound();
+
+    public void onSpeechRecognitionTimeout();
   }
 
 
@@ -100,6 +102,9 @@ public class Listener {
       Log.d("foo", "ExtendedRecognitionListener onError: " + String.valueOf(error));
       if (error == SpeechRecognizer.ERROR_NO_MATCH) {
         mMainActivity.onNoRecognizedSpeechFound();
+      }
+      else if (error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+        mMainActivity.onSpeechRecognitionTimeout();
       }
     }
 
