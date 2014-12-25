@@ -1,6 +1,9 @@
 package com.sibigtroth.botimer;
 
 import android.app.Activity;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -102,8 +105,9 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   @Override
-  public void onFreebaseNodeDataFound(Knower.FreebaseNodeData FreebaseNodeData, String inputText) {
-
+  public void onFreebaseNodeDataFound(Knower.FreebaseNodeData freebaseNodeData, String inputText) {
+    KnowerFragment knowerFragment = (KnowerFragment) getFragmentManager().findFragmentById(R.id.fragmentContainer);
+    knowerFragment.updateKnowledgeCard(freebaseNodeData, inputText);
   }
 
   @Override
@@ -127,7 +131,6 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   ////////////////////////////////////////
 
   private void handleRecognizedSpeech(String recognizedSpeech) {
-    //
     String hotPhrase = checkForHotPhrase(recognizedSpeech, mKnower.HOT_PHRASES);
     if (hotPhrase != null) {
       handleKnowledgeHotPhrase(hotPhrase, recognizedSpeech);
@@ -149,7 +152,6 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     mThinker.sayToBot(recognizedSpeech);
   }
 
-
   private String checkForHotPhrase(String recognizedSpeech, ArrayList<String> hotPhrases) {
     for (int i = 0; i < hotPhrases.size(); i++) {
       String hotPhrase = hotPhrases.get(i);
@@ -161,10 +163,24 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   private void handleKnowledgeHotPhrase(String hotPhrase, String recognizedSpeech) {
+    showKnowledgeFragment();
     int hotPhraseIndex = recognizedSpeech.indexOf(hotPhrase);
     int startIndex = hotPhraseIndex + hotPhrase.length();
     int stopIndex = recognizedSpeech.length();
     String contentString = recognizedSpeech.substring(startIndex, stopIndex);
+    mKnower.findFreebaseNodeDataForInputText(contentString);
+  }
+
+  private void showKnowledgeFragment() {
+    Fragment fragment = getFragmentManager().findFragmentById(R.id.fragmentContainer);
+    if (!(fragment instanceof KnowerFragment)) {
+      KnowerFragment knowerFragment = new KnowerFragment();
+      FragmentManager fragmentManager = getFragmentManager();
+      FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+      fragmentTransaction.setCustomAnimations(R.anim.fade_in_and_slide_up_fragment, R.anim.fade_out_fragment)
+          .replace(R.id.fragmentContainer, knowerFragment)
+          .commit();
+    }
   }
 
   private void handleObjectRecognitionHotPhrase(String hotPhrase, String recognizedSpeech) {
@@ -174,4 +190,5 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   private void handleSynesthesiaHotPhrase(String hotPhrase, String recognizedSpeech) {
 
   }
+
 }
