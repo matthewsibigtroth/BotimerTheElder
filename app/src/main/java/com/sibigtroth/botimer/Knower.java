@@ -19,6 +19,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -28,6 +30,7 @@ import java.util.Random;
 public class Knower {
 
   private MainActivity mMainActivity;
+  public ArrayList<String> HOT_PHRASES;
 
   public Knower(MainActivity mainActivity) {
     mMainActivity = mainActivity;
@@ -36,7 +39,20 @@ public class Knower {
   }
 
   private void initialize() {
+    createKnowledgeHotPhrases();
+  }
 
+  private void createKnowledgeHotPhrases() {
+    HOT_PHRASES = new ArrayList<>(Arrays.asList(
+        "what is",
+        "what are",
+        "show me",
+        "what do you know about",
+        "who is",
+        "where is",
+        "tell me about",
+        "have you ever heard of"
+    ));
   }
 
 
