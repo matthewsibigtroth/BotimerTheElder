@@ -123,6 +123,8 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   @Override
   public void onListeningIndicatorClicked() {
     mListener.listen();
+    //showKnowledgeFragment();
+    //mKnower.findFreebaseNodeDataForInputText("science");
   }
 
 
