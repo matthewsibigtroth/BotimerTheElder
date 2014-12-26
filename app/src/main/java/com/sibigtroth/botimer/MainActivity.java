@@ -6,6 +6,7 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 
 import java.util.ArrayList;
 
@@ -21,7 +22,8 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     Listener.ListenerCallback,
     Knower.KnowerCallback,
     Recognizer.RecognizerCallback,
-    ListenerDisplay.ListenerDisplayCallback {
+    ListenerDisplay.ListenerDisplayCallback,
+    KnowerFragment.KnowerFragmentCallback {
 
   private static final String TAG = "MainActivity";
   private Speaker mSpeaker;
@@ -107,12 +109,13 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   @Override
   public void onFreebaseNodeDataFound(Knower.FreebaseNodeData freebaseNodeData, String inputText) {
     KnowerFragment knowerFragment = (KnowerFragment) getFragmentManager().findFragmentById(R.id.fragmentContainer);
-    knowerFragment.updateKnowledgeCard(freebaseNodeData, inputText);
+    knowerFragment.createKnowerCard(freebaseNodeData, inputText);
   }
 
   @Override
-  public void onRelatedFreebaseNodeDataFound(Knower.FreebaseNodeData FreebaseNodeData, String inputText) {
-
+  public void onRelatedFreebaseNodeDataFound(Knower.FreebaseNodeData freebaseNodeData, String inputText) {
+    KnowerFragment knowerFragment = (KnowerFragment) getFragmentManager().findFragmentById(R.id.fragmentContainer);
+    knowerFragment.createKnowerCard(freebaseNodeData, inputText);
   }
 
   @Override
@@ -124,9 +127,13 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   public void onListeningIndicatorClicked() {
     mListener.listen();
     //showKnowledgeFragment();
-    //mKnower.findFreebaseNodeDataForInputText("science");
+    //mKnower.findFreebaseNodeDataForInputText("geometry");
   }
 
+  @Override
+  public void onKnowerCardClicked(View cardView, Knower.FreebaseNodeData freebaseNodeData) {
+    mKnower.findRelatedFreebaseNodeDataForInputText(freebaseNodeData.name);
+  }
 
   ////////////////////////////////////////
   // utilities
@@ -192,5 +199,4 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   private void handleSynesthesiaHotPhrase(String hotPhrase, String recognizedSpeech) {
 
   }
-
 }
