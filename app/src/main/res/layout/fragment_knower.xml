@@ -13,32 +13,48 @@
         android:id="@+id/knowerCardView"
         android:layout_gravity="center"
         android:layout_width="300dp"
-        android:layout_height="300dp"
-        card_view:cardCornerRadius="4dp">
+        android:layout_height="250dp"
+        card_view:cardCornerRadius="2dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <ImageView
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:layout_marginBottom="10dp"
-                android:id="@+id/knowerCardImage"/>
+                android:layout_height="150dp">
 
-            <TextView
-                android:id="@+id/knowerCardTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="8sp"/>
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:layout_alignParentLeft="true"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentTop="true"
+                    android:scaleType="centerCrop"
+                    android:id="@+id/knowerCardImage"/>
+
+                <TextView
+                    android:id="@+id/knowerCardTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="24sp"
+                    android:layout_margin="16dp"
+                    android:layout_gravity="bottom|left"
+                    android:textColor="#ffffff"/>
+
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/knowerCardSnippet"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="8sp"/>
+                android:textSize="16sp"
+                android:layout_margin="16dp"
+                android:textColor="#575757"
+                android:maxLines="4"
+                android:ellipsize="end"/>
 
         </LinearLayout>
 
