@@ -114,9 +114,7 @@ public class Knower {
           if (numTopics > 0) {
             int index_rand = new Random().nextInt(numTopics);
             JSONObject TopicDatum = new JSONObject(TopicData.get(index_rand).toString());
-            //JSONObject TopicDatum = new JSONObject(TopicData.get(1).toString());
             FreebaseNodeData freebaseNodeData = createFreebaseNodeDataForTopicDatum(TopicDatum);
-            //OnComplete_findFreebaseNodeDataForInputText(FreebaseNodeData, inputText__);
             mMainActivity.onRelatedFreebaseNodeDataFound(freebaseNodeData, inputText__);
           }
         } catch (IOException e) {
@@ -144,16 +142,11 @@ public class Knower {
     JSONObject Blob = new org.json.JSONObject(json);
     JSONArray TopicData = Blob.getJSONArray("result");
 
-    for (int i = 0; i < TopicData.length(); i++) {
-      JSONObject TopicDatum = new JSONObject(TopicData.get(i).toString());
-      String name = TopicDatum.get("name").toString();
-    }
-
     return TopicData;
   }
 
   private FreebaseNodeData createFreebaseNodeDataForTopicDatum(JSONObject TopicDatum) throws JSONException, IOException {
-    //get the topic id
+    // Get the topic id
     String id_topic = "";
     try {
       id_topic = TopicDatum.get("id").toString();
@@ -161,18 +154,18 @@ public class Knower {
       id_topic = TopicDatum.get("mid").toString().replace("\\", "");
     }
 
-    //get the topic name
+    // Get the topic name
     String name = TopicDatum.get("name").toString();
     Log.d("foo", "CreateFreebaseNodeDataForTopicDatum:   " + name);
 
-    //get an image for this topic
+    // Get an image for this topic
     String url_image = this.findImageForTopic(id_topic);
     Log.d("foo", url_image);
 
-    //get the article text for this topic
+    // Get the article text for this topic
     String text = this.findTextForTopic(id_topic);
 
-    //package the data
+    // Package the data
     FreebaseNodeData FreebaseNodeData = new FreebaseNodeData(name, id_topic, url_image, text);
 
     return FreebaseNodeData;
@@ -214,20 +207,6 @@ public class Knower {
     }
 
     return url_image;
-  }
-
-  private boolean determineIfImageExists(String url_image) throws IOException {
-    HashMap<String, Integer> ImageDimensions = this.determineImageDimensionsFromUrl(url_image);
-    int w_image = ImageDimensions.get("w");
-    int h_image = ImageDimensions.get("h");
-
-    int NULL_IMAGE_SIZE = 301;
-
-    if ((w_image == NULL_IMAGE_SIZE) && (h_image == NULL_IMAGE_SIZE)) {
-      return false;
-    } else {
-      return true;
-    }
   }
 
   private HashMap<String, Integer> determineImageDimensionsFromUrl(String url) throws IOException {
