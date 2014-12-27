@@ -110,12 +110,14 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   public void onFreebaseNodeDataFound(Knower.FreebaseNodeData freebaseNodeData, String inputText) {
     KnowerFragment knowerFragment = (KnowerFragment) getFragmentManager().findFragmentById(R.id.fragmentContainer);
     knowerFragment.createKnowerCard(freebaseNodeData, inputText);
+    mSpeaker.speak(freebaseNodeData.text.split("\\.")[0]);
   }
 
   @Override
   public void onRelatedFreebaseNodeDataFound(Knower.FreebaseNodeData freebaseNodeData, String inputText) {
     KnowerFragment knowerFragment = (KnowerFragment) getFragmentManager().findFragmentById(R.id.fragmentContainer);
     knowerFragment.createKnowerCard(freebaseNodeData, inputText);
+    mSpeaker.speak(freebaseNodeData.text.split("\\.")[0]);
   }
 
   @Override
@@ -127,7 +129,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   public void onListeningIndicatorClicked() {
     mListener.listen();
     //showKnowledgeFragment();
-    //mKnower.findFreebaseNodeDataForInputText("geometry");
+    //mKnower.findFreebaseNodeDataForInputText("science");
   }
 
   @Override
