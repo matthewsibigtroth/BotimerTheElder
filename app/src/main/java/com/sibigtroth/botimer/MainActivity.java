@@ -4,10 +4,14 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 
+import java.io.File;
 import java.util.ArrayList;
 
 /*
@@ -34,6 +38,10 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   private Knower mKnower;
   private Recognizer mRecognizer;
   private Synesthetizer mSynesthetizer;
+  private static final int CAPTURE_SYNESTHETIZER_IMAGE_REQUEST = 1;
+  private static final int CAPTURE_OBJECT_RECOGNITION_IMAGE_REQUEST = 2;
+  private String CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH;
+  private String CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -52,8 +60,10 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     mKnower = new Knower(this);
 
     mRecognizer = new Recognizer(this);
+    CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH = this.getExternalFilesDir(null).getAbsolutePath() + "/objectRecognitionCapturedImage.jpg";
 
     mSynesthetizer = new Synesthetizer(this);
+    CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH = this.getExternalFilesDir(null).getAbsolutePath() + "/synesthetizerCapturedImage.jpg";
 
     mListener = new Listener(this);
     mListenerDisplay = new ListenerDisplay(this);
@@ -128,14 +138,38 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   @Override
   public void onListeningIndicatorClicked() {
     mListener.listen();
+
     //showKnowledgeFragment();
     //mKnower.findFreebaseNodeDataForInputText("science");
+
+    //captureSynesthetizerImage();
+    //captureObjectRecognitionImage();
   }
 
   @Override
   public void onKnowerCardClicked(View cardView, Knower.FreebaseNodeData freebaseNodeData) {
     mKnower.findRelatedFreebaseNodeDataForInputText(freebaseNodeData.name);
   }
+
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    if (requestCode == CAPTURE_SYNESTHETIZER_IMAGE_REQUEST) {
+      if (resultCode == RESULT_OK) {
+        handleCapturedSynesthetizerImage();
+      } else if (resultCode == RESULT_CANCELED) {
+      } else {
+        Log.d(TAG, "camera capture failure");
+      }
+    } else if (requestCode == CAPTURE_OBJECT_RECOGNITION_IMAGE_REQUEST) {
+      if (resultCode == RESULT_OK) {
+        handleCapturedObjectRecognitionImage();
+      } else if (resultCode == RESULT_CANCELED) {
+      } else {
+        Log.d(TAG, "camera capture failure");
+      }
+    }
+  }
+
 
   ////////////////////////////////////////
   // utilities
@@ -201,4 +235,29 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   private void handleSynesthesiaHotPhrase(String hotPhrase, String recognizedSpeech) {
 
   }
+
+  private void captureSynesthetizerImage() {
+    File file = new File(CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
+    Uri outputFileUri = Uri.fromFile(file);
+    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+    intent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri);
+    startActivityForResult(intent, CAPTURE_SYNESTHETIZER_IMAGE_REQUEST);
+  }
+
+  private void captureObjectRecognitionImage() {
+    File file = new File(CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH);
+    Uri outputFileUri = Uri.fromFile(file);
+    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+    intent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri);
+    startActivityForResult(intent, CAPTURE_SYNESTHETIZER_IMAGE_REQUEST);
+  }
+
+  private void handleCapturedSynesthetizerImage() {
+
+  }
+
+  private void handleCapturedObjectRecognitionImage() {
+
+  }
+
 }
