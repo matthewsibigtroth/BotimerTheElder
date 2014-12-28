@@ -19,6 +19,7 @@ import java.util.ArrayList;
  show ui feedback when hearing voice input (using onRmsChanged callback
  clean up returned thinking response (e.g. "By &quot;we&quot; do you mean you and me?")
  thinking display
+ have a more action button on knower cards which when pressed will speak more of the freebase info
 */
 
 public class MainActivity extends Activity implements Speaker.SpeakerCallback,
@@ -131,8 +132,15 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   @Override
-  public void onImageRecognitionComplete(String filePath_image, String recognizedObject) {
-
+  public void onImageRecognitionComplete(String imageFilePath, String recognizedObject) {
+    if (recognizedObject != null) {
+      RecognizerFragment recognizerFragment = (RecognizerFragment) getFragmentManager().findFragmentById(R.id.fragmentContainer);
+      recognizerFragment.createRecognizerCard(imageFilePath, recognizedObject);
+      mSpeaker.speak("This looks like a " + recognizedObject);
+    }
+    else {
+      mSpeaker.speak("I'm not sure what that is");
+    }
   }
 
   @Override
@@ -143,7 +151,12 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     //mKnower.findFreebaseNodeDataForInputText("science");
 
     //captureSynesthetizerImage();
+
+    //showRecognizerFragment();
     //captureObjectRecognitionImage();
+    //String imageFilePath = "/storage/emulated/0/Android/data/com.sibigtroth.botimer/files/objectRecognitionCapturedImage.jpg";
+    //String recognizedObject = "purple and black macbook";
+    //onImageRecognitionComplete(imageFilePath, recognizedObject);
   }
 
   @Override
@@ -229,11 +242,11 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   private void handleObjectRecognitionHotPhrase(String hotPhrase, String recognizedSpeech) {
-
+    showRecognizerFragment();
+    captureObjectRecognitionImage();
   }
 
   private void handleSynesthesiaHotPhrase(String hotPhrase, String recognizedSpeech) {
-
   }
 
   private void captureSynesthetizerImage() {
@@ -249,7 +262,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     Uri outputFileUri = Uri.fromFile(file);
     Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
     intent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri);
-    startActivityForResult(intent, CAPTURE_SYNESTHETIZER_IMAGE_REQUEST);
+    startActivityForResult(intent, CAPTURE_OBJECT_RECOGNITION_IMAGE_REQUEST);
   }
 
   private void handleCapturedSynesthetizerImage() {
@@ -257,7 +270,20 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   private void handleCapturedObjectRecognitionImage() {
-
+    mRecognizer.recognizeImage(CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH);
   }
+
+  private void showRecognizerFragment() {
+    Fragment fragment = getFragmentManager().findFragmentById(R.id.fragmentContainer);
+    if (!(fragment instanceof RecognizerFragment)) {
+      RecognizerFragment recognizerFragment = new RecognizerFragment();
+      FragmentManager fragmentManager = getFragmentManager();
+      FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+      fragmentTransaction.setCustomAnimations(R.anim.fade_in_and_slide_up_fragment, R.anim.fade_out_fragment)
+          .replace(R.id.fragmentContainer, recognizerFragment)
+          .commit();
+    }
+  }
+
 
 }
