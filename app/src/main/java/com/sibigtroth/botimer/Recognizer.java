@@ -20,11 +20,12 @@ import java.util.Arrays;
  */
 public class Recognizer {
 
-  private final static String TAG = "Recognizer";
+  private static final String TAG = "Recognizer";
   private MainActivity mMainActivity;
   public ArrayList<String> HOT_PHRASES;
-  private final static String CAM_FIND_API_KEY = "q5QVimyNMzOHw6VEbGOdxjO7bYfCMAOZ";
-  private final static int SERVER_SIDE_RECOGNITION_PROCESSING_TIME = 10000;
+  private static final String CAMFIND_API_KEY = "q5QVimyNMzOHw6VEbGOdxjO7bYfCMAOZ";
+  private static final int SERVER_SIDE_RECOGNITION_PROCESSING_TIME = 10000;
+  private static final String CAMFIND_POST_IMAGE_FILE_NAME = "camFindImageToPost.jpg";
 
   public Recognizer(MainActivity mainActivity) {
     mMainActivity = mainActivity;
@@ -81,7 +82,7 @@ public class Recognizer {
   private String createResizedCameraCapturedImage(String imageFolderPath, String imageFileName, int w_new, int h_new) {
     Log.d(TAG, "createResizedCameraCapturedImage");
     String originalImageFilePath = imageFolderPath + imageFileName;
-    String resizedImageFilePath = imageFolderPath + "camFindImageToPost.jpg";
+    String resizedImageFilePath = imageFolderPath + CAMFIND_POST_IMAGE_FILE_NAME;
 
     Bitmap originalBitmap = BitmapFactory.decodeFile(originalImageFilePath);
     int originalBitmapWidth = originalBitmap.getWidth();
@@ -114,7 +115,7 @@ public class Recognizer {
         File file_resized = new File(resizedImageFilePath);
         try {
           HttpResponse<JsonNode> uploadImageRequest = Unirest.post("https://camfind.p.mashape.com/image_requests")
-              .header("X-Mashape-Authorization", CAM_FIND_API_KEY)
+              .header("X-Mashape-Authorization", CAMFIND_API_KEY)
               .field("image_request[locale]", "en_US")
               .field("image_request[image]", file_resized)
               .asJson();
