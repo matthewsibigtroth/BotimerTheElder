@@ -20,9 +20,12 @@ import java.util.Arrays;
  */
 public class Recognizer {
 
+  private static final String TAG = "Recognizer";
   private MainActivity mMainActivity;
-  private String mImageRecognitionRequestToken;
   public ArrayList<String> HOT_PHRASES;
+  private static final String CAMFIND_API_KEY = "q5QVimyNMzOHw6VEbGOdxjO7bYfCMAOZ";
+  private static final int SERVER_SIDE_RECOGNITION_PROCESSING_TIME = 10000;
+  private static final String CAMFIND_POST_IMAGE_FILE_NAME = "camFindImageToPost.jpg";
 
   public Recognizer(MainActivity mainActivity) {
     mMainActivity = mainActivity;
@@ -31,7 +34,6 @@ public class Recognizer {
   }
 
   private void initialize() {
-    mImageRecognitionRequestToken = "";
     createObjectRecognitionHotPhrases();
   }
 
@@ -47,9 +49,16 @@ public class Recognizer {
   /////////////////////////////////////
 
   public interface RecognizerCallback {
+    public void onImageRecognitionComplete(String imageFilePath, String recognizedObject);
+  }
 
-    public void onImageRecognitionComplete(String filePath_image, String recognizedObject);
-
+  private void onResizedImagePostedToCamFind(final String originalImageFilePath, final String requestToken) {
+    mMainActivity.runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        askCamFindToRecognizeImage(originalImageFilePath, requestToken);
+      }
+    });
   }
 
 
@@ -57,80 +66,64 @@ public class Recognizer {
   //utilities
   /////////////////////////////////////
 
-  public void recognizeImage(final String filePath_image) {
-    //parse out the folder path and file name
-    int index_lastSlash = filePath_image.lastIndexOf("/");
-    String folderPath_image = filePath_image.substring(0, index_lastSlash + 1);
-    String fileName_image = filePath_image.substring(index_lastSlash + 1);
+  public void recognizeImage(final String imageFilePath) {
+    Log.d(TAG, "recognizeImage: " + imageFilePath);
+    // Parse out the folder path and file name
+    int lastSlashIndex = imageFilePath.lastIndexOf("/");
+    String folderPathImage = imageFilePath.substring(0, lastSlashIndex + 1);
+    String imageFileName = imageFilePath.substring(lastSlashIndex + 1);
 
-    //resize the image for posting to camfind
-    String filePath_image_resized = this.CreateResizedCameraCapturedImage(folderPath_image, fileName_image, 640, 480);
-    this.PostResizedImageToCamFind(filePath_image_resized);
-
-    //ask camfind to recognize the just-posted image (on the ui thread)
-    mMainActivity.runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        askCamFindToRecognizeImage(filePath_image);
-      }
-    });
+    // Resize the image so we can post it to camfind
+    // (when the post completes, then we make another request for the recognition result of the just-posted image)
+    String resizedImageFilePath = createResizedCameraCapturedImage(folderPathImage, imageFileName, 640, 480);
+    postResizedImageToCamFind(resizedImageFilePath, imageFilePath);
   }
 
-  private String CreateResizedCameraCapturedImage(String folderPath_image, String fileName_image, int w_new, int h_new) {
-    String filePath_image_original = folderPath_image + fileName_image;
-    String filePath_image_resized = folderPath_image + "camFindImageToPost.jpg";
+  private String createResizedCameraCapturedImage(String imageFolderPath, String imageFileName, int w_new, int h_new) {
+    Log.d(TAG, "createResizedCameraCapturedImage");
+    String originalImageFilePath = imageFolderPath + imageFileName;
+    String resizedImageFilePath = imageFolderPath + CAMFIND_POST_IMAGE_FILE_NAME;
 
-    Bitmap bitmap_orig = BitmapFactory.decodeFile(filePath_image_original);
-    int w_bitmap_orig = bitmap_orig.getWidth();
-    int h_bitmap_orig = bitmap_orig.getHeight();
-    Bitmap bitmap_resized;
-    if (w_bitmap_orig > h_bitmap_orig) {
-      bitmap_resized = Bitmap.createScaledBitmap(bitmap_orig, w_new, h_new, false);
+    Bitmap originalBitmap = BitmapFactory.decodeFile(originalImageFilePath);
+    int originalBitmapWidth = originalBitmap.getWidth();
+    int originalBitmapHeight = originalBitmap.getHeight();
+    Bitmap resizedBitmap;
+    if (originalBitmapWidth > originalBitmapHeight) {
+      resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, w_new, h_new, false);
     } else {
-      bitmap_resized = Bitmap.createScaledBitmap(bitmap_orig, h_new, w_new, false);
+      resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, h_new, w_new, false);
     }
-
-    File file_resized = new File(filePath_image_resized);
-
-    //Log.i("foo", "resized file exists  >>>>>>>>>>>>>>>>>>>>  " + file_resized.exists());
-
-    FileOutputStream fOut;
+    File resizedFile = new File(resizedImageFilePath);
+    FileOutputStream fileOutputStream;
     try {
-      fOut = new FileOutputStream(file_resized);
-      bitmap_resized.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
-      fOut.flush();
-      fOut.close();
-      bitmap_orig.recycle();
-      bitmap_resized.recycle();
-
+      fileOutputStream = new FileOutputStream(resizedFile);
+      resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+      fileOutputStream.flush();
+      fileOutputStream.close();
+      originalBitmap.recycle();
+      resizedBitmap.recycle();
     } catch (Exception e) {
-
     }
 
-    return filePath_image_resized;
+    return resizedImageFilePath;
   }
 
-  private void PostResizedImageToCamFind(String filePath_image_resized) {
-    final String filePath_image_resized_ = filePath_image_resized;
-
+  private void postResizedImageToCamFind(final String resizedImageFilePath, final String originalImageFilePath) {
+    Log.d(TAG, "postResizedImageToCamFind:  " + resizedImageFilePath);
     Runnable runnable = new Runnable() {
       public void run() {
-
-        File file_resized = new File(filePath_image_resized_);
-
+        File file_resized = new File(resizedImageFilePath);
         try {
-          HttpResponse<JsonNode> request_uploadImage = Unirest.post("https://camfind.p.mashape.com/image_requests")
-              .header("X-Mashape-Authorization", "q5QVimyNMzOHw6VEbGOdxjO7bYfCMAOZ")
+          HttpResponse<JsonNode> uploadImageRequest = Unirest.post("https://camfind.p.mashape.com/image_requests")
+              .header("X-Mashape-Authorization", CAMFIND_API_KEY)
               .field("image_request[locale]", "en_US")
               .field("image_request[image]", file_resized)
               .asJson();
-
-          Log.d("foo", request_uploadImage.toString());
-          String tokenString = request_uploadImage.getBody().toString();
-
-          int index_firstComma = tokenString.indexOf(",");
-          mImageRecognitionRequestToken = tokenString.substring(10, index_firstComma - 1);
-
+          String requestString = uploadImageRequest.getBody().toString();
+          int firstCommaIndex = requestString.indexOf(",");
+          String requestToken = requestString.substring(10, firstCommaIndex - 1);
+          Log.d(TAG, "requestToken:  " + requestToken);
+          onResizedImagePostedToCamFind(originalImageFilePath, requestToken);
         } catch (UnirestException e) {
           e.printStackTrace();
         }
@@ -140,50 +133,43 @@ public class Recognizer {
     thread.start();
   }
 
-
-  private void askCamFindToRecognizeImage(final String filePath_image) {
-    Log.i("foo", "AskCamFindToRecognizeImage");
-
+  private void askCamFindToRecognizeImage(final String originalImageFilePath, final String requestToken) {
+    Log.d(TAG, "askCamFindToRecognizeImage");
     Handler delayHandler = new Handler();
     Runnable runnable = new Runnable() {
-
       @Override
       public void run() {
-
         Runnable runnable = new Runnable() {
-
           @Override
           public void run() {
-            HttpResponse<JsonNode> request_recognized = null;
+            HttpResponse<JsonNode> recognizeRequest = null;
             try {
-              request_recognized = Unirest.get("https://camfind.p.mashape.com/image_responses/" + mImageRecognitionRequestToken)
+              Log.d(TAG, "actually asking cam find to recognize image");
+              recognizeRequest = Unirest.get("https://camfind.p.mashape.com/image_responses/" + requestToken)
                   .header("X-Mashape-Authorization", "YMQQG7yJ4LsBWIrmnzS19ErBtWOTMHlW")
                   .asJson();
             } catch (UnirestException e) {
               e.printStackTrace();
             }
-            Log.d("foo", request_recognized.toString());
-            String recognitionString = request_recognized.getBody().toString();
-            Log.d("foo", recognitionString);
-            String recognizedObject = "";
+            String recognitionString = recognizeRequest.getBody().toString();
+            String recognizedObject = null;
             if (recognitionString.contains("not completed") == true) {
-              Log.d("foo", "askCamFindToRecognizeImage:  the server has not completed its image analyses");
+              Log.d(TAG, "askCamFindToRecognizeImage:  the server has not completed its image analyses");
             } else {
               recognizedObject = recognitionString.substring(30, recognitionString.length() - 2);
-              Log.d("foo", "recognizedObject:  " + recognizedObject);
+              Log.d(TAG, "recognizedObject:  " + recognizedObject);
             }
-
-            mMainActivity.onImageRecognitionComplete(filePath_image, recognizedObject);
-
+            mMainActivity.onImageRecognitionComplete(originalImageFilePath, recognizedObject);
           }
         };
         Thread thread = new Thread(runnable);
         thread.start();
       }
-
     };
 
-    long delay = 15000;
+    // Allow the server some time to recognize the posted image
+    Log.d(TAG, "asking cam find to recognized posted image in " + String.valueOf(SERVER_SIDE_RECOGNITION_PROCESSING_TIME) + " seconds");
+    long delay = SERVER_SIDE_RECOGNITION_PROCESSING_TIME;
     delayHandler.postDelayed(runnable, delay);
   }
 }
