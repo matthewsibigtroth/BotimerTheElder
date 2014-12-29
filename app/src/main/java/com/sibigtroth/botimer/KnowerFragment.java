@@ -33,7 +33,7 @@ public class KnowerFragment extends Fragment {
   }
 
   public interface KnowerFragmentCallback {
-    public void onKnowerCardClicked(View cardView, Knower.FreebaseNodeData freebaseNodeData);
+    public void onKnowerCardSingleTap(View cardView, Knower.FreebaseNodeData freebaseNodeData);
   }
 
   @Override
@@ -46,15 +46,17 @@ public class KnowerFragment extends Fragment {
     FrameLayout knowerFragmentContainer = (FrameLayout) getActivity().findViewById(R.id.knowerFragmentContainer);
     knowerFragmentContainer.addView(cardView);
 
-    // Animate the card
-    ObjectAnimator alphaAnimation = ObjectAnimator.ofFloat(cardView, "alpha", 0, 1);
-    alphaAnimation.setDuration(400);
-    alphaAnimation.setInterpolator(new DecelerateInterpolator());
-    alphaAnimation.start();
-    ObjectAnimator translateYAnimation = ObjectAnimator.ofFloat(cardView, "y", 350, 0);
-    translateYAnimation.setDuration(400);
-    translateYAnimation.setInterpolator(new DecelerateInterpolator());
-    translateYAnimation.start();
+    // Animate the card showing
+    showCard(cardView);
+  }
+
+  public void onCardSingleTap(View cardView) {
+    MainActivity mainActivity = (MainActivity) getActivity();
+    mainActivity.onKnowerCardSingleTap(cardView, mCardViewToFreebaseNodeData.get(cardView));
+  }
+
+  public void onCardSwipe(View cardView, float velocityX, float velocityY) {
+    removeCard(cardView, velocityX, velocityY);
   }
 
   public void createKnowerCard(final Knower.FreebaseNodeData freebaseNodeData, final String inputText) {
@@ -63,8 +65,8 @@ public class KnowerFragment extends Fragment {
       public void run() {
         // Create the empty card view
         View cardView = LayoutInflater.from(getActivity()).inflate(R.layout.knower_card, null);
-        // Listen for clicks
-        cardView.setOnClickListener(mCardViewOnClickListener);
+        // Listen for touch events
+        cardView.setOnTouchListener(new CardOnTouchListener(getActivity(), cardView));
         // Set the card title
         TextView titleTextView = (TextView) cardView.findViewById(R.id.knowerCardTitle);
         titleTextView.setText(freebaseNodeData.name);
@@ -85,7 +87,7 @@ public class KnowerFragment extends Fragment {
       public void run() {
         // Create the empty card view
         View cardView = LayoutInflater.from(getActivity()).inflate(R.layout.knower_card, null);
-        cardView.setOnTouchListener(new CardTouchListener(getActivity()));
+        cardView.setOnTouchListener(new CardOnTouchListener(getActivity(), cardView));
         // Add the card to the fragment
         FrameLayout knowerFragmentContainer = (FrameLayout) getActivity().findViewById(R.id.knowerFragmentContainer);
         knowerFragmentContainer.addView(cardView);
@@ -93,12 +95,39 @@ public class KnowerFragment extends Fragment {
     });
   }
 
-  public class CardTouchListener implements View.OnTouchListener {
+  private void showCard(View cardView) {
+    ObjectAnimator alphaAnimation = ObjectAnimator.ofFloat(cardView, "alpha", 0, 1);
+    alphaAnimation.setDuration(400);
+    alphaAnimation.setInterpolator(new DecelerateInterpolator());
+    alphaAnimation.start();
+    ObjectAnimator translateYAnimation = ObjectAnimator.ofFloat(cardView, "y", 350, 0);
+    translateYAnimation.setDuration(400);
+    translateYAnimation.setInterpolator(new DecelerateInterpolator());
+    translateYAnimation.start();
+  }
+
+  private void removeCard(View cardView, float velocityX, float velocityY) {
+    Log.d(TAG, "velX: " + velocityX + "  velY: " + velocityY);
+    float startX = cardView.getX();
+    float stopX = startX + velocityX / 3;
+    ObjectAnimator xAnimation = ObjectAnimator.ofFloat(cardView, "x", startX, stopX);
+    xAnimation.setDuration(400);
+    xAnimation.setInterpolator(new DecelerateInterpolator());
+    xAnimation.start();
+    float startY = cardView.getY();
+    float stopY = startY + velocityY / 3;
+    ObjectAnimator translateYAnimation = ObjectAnimator.ofFloat(cardView, "y", startY, stopY);
+    translateYAnimation.setDuration(400);
+    translateYAnimation.setInterpolator(new DecelerateInterpolator());
+    translateYAnimation.start();
+  }
+
+  public class CardOnTouchListener implements View.OnTouchListener {
 
     private final GestureDetector mGestureDetector;
 
-    public CardTouchListener(Context context) {
-      mGestureDetector = new GestureDetector(context, new GestureListener());
+    public CardOnTouchListener(Context context, View cardView) {
+      mGestureDetector = new GestureDetector(context, new GestureListener(cardView));
     }
 
     @Override
@@ -111,10 +140,21 @@ public class KnowerFragment extends Fragment {
 
     private static final int SWIPE_THRESHOLD = 100;
     private static final int SWIPE_VELOCITY_THRESHOLD = 100;
+    private View mCardView;
+
+    public GestureListener(View cardView) {
+      mCardView = cardView;
+    }
 
     @Override
     public boolean onDown(MotionEvent e) {
       return true;
+    }
+
+    @Override
+    public boolean onSingleTapConfirmed(MotionEvent e) {
+      KnowerFragment.this.onCardSingleTap(mCardView);
+      return false;
     }
 
     @Override
@@ -125,23 +165,7 @@ public class KnowerFragment extends Fragment {
         float diffX = e2.getX() - e1.getX();
         if (Math.abs(diffX) > Math.abs(diffY)) {
           if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
-            if (diffX > 0) {
-              //onSwipeRight();
-              Log.d(TAG, "right");
-            } else {
-              //onSwipeLeft();
-              Log.d(TAG, "left");
-            }
-          }
-        } else {
-          if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
-            if (diffY > 0) {
-              //onSwipeBottom();
-              Log.d(TAG, "bottom");
-            } else {
-              //onSwipeTop();
-              Log.d(TAG, "right");
-            }
+            KnowerFragment.this.onCardSwipe(mCardView, velocityX, velocityY);
           }
         }
       } catch (Exception exception) {
@@ -177,13 +201,4 @@ public class KnowerFragment extends Fragment {
       KnowerFragment.this.onCardImageSet(mCardView);
     }
   }
-
-  private View.OnClickListener mCardViewOnClickListener = new View.OnClickListener() {
-
-    @Override
-    public void onClick(View cardView) {
-      MainActivity mainActivity = (MainActivity) getActivity();
-      mainActivity.onKnowerCardClicked(cardView, mCardViewToFreebaseNodeData.get(cardView));
-    }
-  };
 }

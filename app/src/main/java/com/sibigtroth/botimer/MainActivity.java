@@ -160,7 +160,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   @Override
-  public void onKnowerCardClicked(View cardView, Knower.FreebaseNodeData freebaseNodeData) {
+  public void onKnowerCardSingleTap(View cardView, Knower.FreebaseNodeData freebaseNodeData) {
     mKnower.findRelatedFreebaseNodeDataForInputText(freebaseNodeData.name);
   }
 
