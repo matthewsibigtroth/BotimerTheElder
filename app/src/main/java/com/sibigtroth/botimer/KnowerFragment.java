@@ -1,6 +1,8 @@
 package com.sibigtroth.botimer;
 
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Fragment;
 import android.content.Context;
@@ -8,13 +10,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
+import android.webkit.URLUtil;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -107,22 +109,56 @@ public class KnowerFragment extends Fragment {
   }
 
   private void removeCard(View cardView, float velocityX, float velocityY) {
-    Log.d(TAG, "velX: " + velocityX + "  velY: " + velocityY);
     float startX = cardView.getX();
     float stopX = startX + velocityX / 3;
-    ObjectAnimator xAnimation = ObjectAnimator.ofFloat(cardView, "x", startX, stopX);
-    xAnimation.setDuration(400);
-    xAnimation.setInterpolator(new DecelerateInterpolator());
-    xAnimation.start();
+    ObjectAnimator xAnimator = ObjectAnimator.ofFloat(cardView, "x", startX, stopX);
+    xAnimator.setDuration(400);
+    xAnimator.setInterpolator(new DecelerateInterpolator());
     float startY = cardView.getY();
     float stopY = startY + velocityY / 3;
-    ObjectAnimator translateYAnimation = ObjectAnimator.ofFloat(cardView, "y", startY, stopY);
-    translateYAnimation.setDuration(400);
-    translateYAnimation.setInterpolator(new DecelerateInterpolator());
-    translateYAnimation.start();
+    ObjectAnimator yAnimator = ObjectAnimator.ofFloat(cardView, "y", startY, stopY);
+    yAnimator.setDuration(400);
+    yAnimator.setInterpolator(new DecelerateInterpolator());
+    AnimatorSet animatorSet = new AnimatorSet();
+    animatorSet.playTogether(xAnimator, yAnimator);
+    animatorSet.addListener(new HideCardAnimationListener(cardView));
+    animatorSet.start();
   }
 
-  public class CardOnTouchListener implements View.OnTouchListener {
+  public void onRemoveCardAnimationEnd(View cardView) {
+    FrameLayout knowerFragmentContainer = (FrameLayout) getActivity().findViewById(R.id.knowerFragmentContainer);
+    knowerFragmentContainer.removeView(cardView);
+    mCardViewToFreebaseNodeData.remove(cardView);
+  }
+
+  private class HideCardAnimationListener implements Animator.AnimatorListener {
+
+    private View mCardView;
+
+    public HideCardAnimationListener(View cardView) {
+      mCardView = cardView;
+    }
+
+    @Override
+    public void onAnimationStart(Animator animation) {
+    }
+
+    @Override
+    public void onAnimationEnd(Animator animation) {
+      onRemoveCardAnimationEnd(mCardView);
+    }
+
+    @Override
+    public void onAnimationCancel(Animator animation) {
+    }
+
+    @Override
+    public void onAnimationRepeat(Animator animation) {
+    }
+  }
+
+
+  private class CardOnTouchListener implements View.OnTouchListener {
 
     private final GestureDetector mGestureDetector;
 
@@ -138,8 +174,8 @@ public class KnowerFragment extends Fragment {
 
   private final class GestureListener extends GestureDetector.SimpleOnGestureListener {
 
-    private static final int SWIPE_THRESHOLD = 100;
-    private static final int SWIPE_VELOCITY_THRESHOLD = 100;
+    private static final int SWIPE_THRESHOLD = 30;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 30;
     private View mCardView;
 
     public GestureListener(View cardView) {
@@ -153,7 +189,7 @@ public class KnowerFragment extends Fragment {
 
     @Override
     public boolean onSingleTapConfirmed(MotionEvent e) {
-      KnowerFragment.this.onCardSingleTap(mCardView);
+      onCardSingleTap(mCardView);
       return false;
     }
 
@@ -187,8 +223,10 @@ public class KnowerFragment extends Fragment {
 
     protected Boolean doInBackground(Void... params) {
       try {
-        URL url = new URL(mUrl);
-        mBitmap = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+        if (URLUtil.isNetworkUrl(mUrl)) {
+          URL url = new URL(mUrl);
+          mBitmap = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+        }
       } catch (IOException e) {
         e.printStackTrace();
       }

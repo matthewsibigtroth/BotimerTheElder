@@ -20,6 +20,7 @@ import java.util.ArrayList;
  clean up returned thinking response (e.g. "By &quot;we&quot; do you mean you and me?")
  thinking display
  have a more action button on knower cards which when pressed will speak more of the freebase info
+ replace text Alice with Botimer
 */
 
 public class MainActivity extends Activity implements Speaker.SpeakerCallback,
@@ -226,7 +227,12 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     int startIndex = hotPhraseIndex + hotPhrase.length();
     int stopIndex = recognizedSpeech.length();
     String contentString = recognizedSpeech.substring(startIndex, stopIndex);
-    mKnower.findFreebaseNodeDataForInputText(contentString);
+    if (!contentString.equals("")) {
+      mKnower.findFreebaseNodeDataForInputText(contentString);
+    }
+    else {
+      mThinker.sayToBot(recognizedSpeech);
+    }
   }
 
   private void showKnowledgeFragment() {
