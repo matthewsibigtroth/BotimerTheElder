@@ -21,6 +21,9 @@ import java.util.ArrayList;
  thinking display
  have a more action button on knower cards which when pressed will speak more of the freebase info
  replace text Alice with Botimer
+ default knower card image when none is present
+ help text
+ busy indicator
 */
 
 public class MainActivity extends Activity implements Speaker.SpeakerCallback,
@@ -253,6 +256,8 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   private void handleSynesthesiaHotPhrase(String hotPhrase, String recognizedSpeech) {
+    showSynesthetizerFragment();
+    captureSynesthetizerImage();
   }
 
   private void captureSynesthetizerImage() {
@@ -272,7 +277,12 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   private void handleCapturedSynesthetizerImage() {
+    mSynesthetizer.synesthetizeImage(CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
+    getSynesthetizerFragment().setCapturedImage(CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
+  }
 
+  private SynesthetizerFragment getSynesthetizerFragment() {
+    return (SynesthetizerFragment) getFragmentManager().findFragmentById(R.id.fragmentContainer);
   }
 
   private void handleCapturedObjectRecognitionImage() {
@@ -291,5 +301,16 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     }
   }
 
+  private void showSynesthetizerFragment() {
+    Fragment fragment = getFragmentManager().findFragmentById(R.id.fragmentContainer);
+    if (!(fragment instanceof SynesthetizerFragment)) {
+      SynesthetizerFragment synesthetizerFragment = new SynesthetizerFragment();
+      FragmentManager fragmentManager = getFragmentManager();
+      FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+      fragmentTransaction.setCustomAnimations(R.anim.fade_in_and_slide_up_fragment, R.anim.fade_out_fragment)
+          .replace(R.id.fragmentContainer, synesthetizerFragment)
+          .commit();
+    }
+  }
 
 }
