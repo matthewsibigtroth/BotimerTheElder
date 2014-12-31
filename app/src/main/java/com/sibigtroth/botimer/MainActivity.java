@@ -24,6 +24,7 @@ import java.util.ArrayList;
  default knower card image when none is present
  help text
  busy indicator
+ remove dependencies for interfaces
 */
 
 public class MainActivity extends Activity implements Speaker.SpeakerCallback,
@@ -32,7 +33,8 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     Knower.KnowerCallback,
     Recognizer.RecognizerCallback,
     ListenerDisplay.ListenerDisplayCallback,
-    KnowerFragment.KnowerFragmentCallback {
+    KnowerFragment.KnowerFragmentCallback,
+    Synesthetizer.SynesthetizerCallback {
 
   private static final String TAG = "MainActivity";
   private Speaker mSpeaker;
@@ -47,6 +49,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   private static final int CAPTURE_OBJECT_RECOGNITION_IMAGE_REQUEST = 2;
   private String CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH;
   private String CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH;
+  private static final int SYNESTHETIZER_PALETTE_SIZE = 7;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -158,9 +161,9 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
 
     //showRecognizerFragment();
     //captureObjectRecognitionImage();
-    //String imageFilePath = "/storage/emulated/0/Android/data/com.sibigtroth.botimer/files/objectRecognitionCapturedImage.jpg";
-    //String recognizedObject = "purple and black macbook";
-    //onImageRecognitionComplete(imageFilePath, recognizedObject);
+
+    //showSynesthetizerFragment();
+    //captureSynesthetizerImage();
   }
 
   @Override
@@ -185,6 +188,11 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
         Log.d(TAG, "camera capture failure");
       }
     }
+  }
+
+  @Override
+  public void onSynesthetizerImagePaletteExtracted(ArrayList<Synesthetizer.PaletteColor> paletteColors) {
+    getSynesthetizerFragment().loadPalette(paletteColors);
   }
 
 
@@ -277,7 +285,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   private void handleCapturedSynesthetizerImage() {
-    mSynesthetizer.synesthetizeImage(CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
+    mSynesthetizer.synesthetizeImage(CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH, SYNESTHETIZER_PALETTE_SIZE);
     getSynesthetizerFragment().setCapturedImage(CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
   }
 
@@ -307,10 +315,10 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
       SynesthetizerFragment synesthetizerFragment = new SynesthetizerFragment();
       FragmentManager fragmentManager = getFragmentManager();
       FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-      fragmentTransaction.setCustomAnimations(R.anim.fade_in_and_slide_up_fragment, R.anim.fade_out_fragment)
+      fragmentTransaction.setCustomAnimations(R.anim.fade_in_and_slide_up_fragment, R.anim.fade_out_fragment, R.anim.fade_in_fragment, R.anim.fade_out_fragment)
           .replace(R.id.fragmentContainer, synesthetizerFragment)
+          .addToBackStack(null)
           .commit();
     }
   }
-
 }

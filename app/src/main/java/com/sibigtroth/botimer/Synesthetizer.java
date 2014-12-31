@@ -13,6 +13,7 @@ import java.util.Random;
  */
 public class Synesthetizer {
 
+  private static final String TAG = "Synesthetizer";
   private MainActivity mMainActivity;
   public ArrayList<String> HOT_PHRASES;
   private ArrayList<ArrayList<Point>> mRepresentativeSubClusters;
@@ -22,6 +23,10 @@ public class Synesthetizer {
     mMainActivity = mainActivity;
 
     initialize();
+  }
+
+  public interface SynesthetizerCallback {
+    public void onSynesthetizerImagePaletteExtracted(ArrayList<PaletteColor> paletteColors);
   }
 
   private void initialize() {
@@ -34,8 +39,9 @@ public class Synesthetizer {
     ));
   }
 
-  public void synesthetizeImage(String imageFilePath) {
-    ArrayList<Integer> palette = findImagePalette(imageFilePath);
+  public void synesthetizeImage(String imageFilePath, int paletteSize) {
+    ArrayList<PaletteColor> paletteColors = determineImagePalette(imageFilePath, paletteSize);
+    mMainActivity.onSynesthetizerImagePaletteExtracted(paletteColors);
   }
 
   public Point findRepresentativeClusterPointForGivenClusterIndex(int clusterIndex)
@@ -47,39 +53,12 @@ public class Synesthetizer {
     {
       int randIndex = mRandom.nextInt(representativeSubCluster.size());
       point = representativeSubCluster.get(randIndex);
-
-      //Log.i("foo", "findRepresentativePixelCoordForGivenClusterIndex " + point.x + " " + point.y + " " + point.z);
     }
 
     return point;
   }
 
-    /*
-    public void findImagePalette(String filePath_image)
-    {
-        int numPoints = 100000;
-        Point[] points = new Point[numPoints];
-        Random random = new Random();
-        for (int i=0; i<numPoints; i++)
-        {
-            int x_rand = random.nextInt(256);
-            int y_rand = random.nextInt(256);
-            int z_rand = random.nextInt(256);
-            Point point = new Point(x_rand, y_rand, z_rand);
-            points[i] = point;
-        }
-
-        int numClusters = 5;
-        int width = 255;
-        int height = 255;
-        int depth = 255;
-
-        DalvikClusterer dalvikClusterer = new DalvikClusterer();
-        dalvikClusterer.cluster(points, numClusters, width, height, depth);
-    }
-    */
-
-  public ArrayList<Integer> findImagePalette(String imageFilePath)
+  public ArrayList<PaletteColor> determineImagePalette(String imageFilePath, int paletteSize)
   {
     float newScale = .1f;
     Bitmap resizedBitmap = resizeImage(imageFilePath, newScale);
@@ -92,22 +71,22 @@ public class Synesthetizer {
       int r = Color.red(pixelColor);
       int g = Color.green(pixelColor);
       int b = Color.blue(pixelColor);
-      //make sure to scale back up the pixel coords (since we scaled down the original image when collecting pixels)
+      // Make sure to scale back up the pixel coords (since we scaled down the original image when collecting pixels)
       float fullSizeImageX = ((float)bitmapPixels[i].x / newScale);
       float fullSizeImageY = ((float)bitmapPixels[i].y / newScale);
-      //now map these values to the screen size
-      //cheat with hardcoded values
-      //screensize 640, 360
-      //taken picture size 1024 576
+      // Now map these values to the screen size
+      // Cheat with hardcoded values
+      // TODO: update these values with the correct values (i.e. get screen dims and image dims)
+      // Screensize 640, 360
+      // Taken picture size 1024 576
       float scaleFactor = 640f/1024f;
       int x = (int)(fullSizeImageX * scaleFactor);
       int y = (int)(fullSizeImageY * scaleFactor);
-      //Log.i("foo", "findPaletteImage   x " + x + "  y  " + y);
       Point point = new Point(r, g, b, x, y);
       points[i] = point;
     }
 
-    int numClusters = 5;
+    int numClusters = paletteSize;
     int width = 255;
     int height = 255;
     int depth = 255;
@@ -115,21 +94,20 @@ public class Synesthetizer {
     DalvikClusterer dalvikClusterer = new DalvikClusterer();
     Point[] rgbColors = dalvikClusterer.cluster(points, numClusters, width, height, depth);
 
-    ArrayList<Integer> colors = new ArrayList<>();
+    ArrayList<PaletteColor> paletteColors = new ArrayList<>();
     for (int j=0; j<rgbColors.length; j++)
     {
       int r = rgbColors[j].x;
       int g = rgbColors[j].y;
       int b = rgbColors[j].z;
-      //Log.i("foo", "r:  " + r + "  g:  " + g + "  b:  " + b);
       int color = Color.rgb(r, g, b);
-      //Log.i("foo", "color:  " + color);
-      colors.add(color);
+      int frequency = mapColorToFrequency(color);
+      paletteColors.add(new PaletteColor(color, j, frequency));
     }
 
     storeRepresentativeSubClusters(points, dalvikClusterer.means, dalvikClusterer);
 
-    return colors;
+    return paletteColors;
   }
 
   private void storeRepresentativeSubClusters(Point[] points, Point[] means, DalvikClusterer dalvikClusterer)
@@ -143,27 +121,19 @@ public class Synesthetizer {
 
     double distanceThreshold = 25;//10;
 
-    //loop through all the points
-    for (int i=0; i<points.length; i++)
-    {
-      //get the distance between this point and its cluster mean
+    // Loop through all the points
+    for (int i=0; i<points.length; i++) {
+      // Get the distance between this point and its cluster mean
       int clusterForThisPoint = points[i].cluster;
       Point meanForThisCluster = means[clusterForThisPoint];
       double distanceBetweenThisPointAndClusterMean = dalvikClusterer.computeDistance(points[i], meanForThisCluster);
 
-      //if this distance is small enough
-      if (distanceBetweenThisPointAndClusterMean <= distanceThreshold)
-      {
-        //add it to the stored representative cluster
+      // If this distance is small enough
+      if (distanceBetweenThisPointAndClusterMean <= distanceThreshold) {
+        // Add it to the stored representative cluster
         mRepresentativeSubClusters.get(clusterForThisPoint).add(points[i]);
       }
     }
-
-    for (int k=0; k<mRepresentativeSubClusters.size(); k++)
-    {
-      Log.i("foo", "-----------  rep sub cluster size  ----------" + mRepresentativeSubClusters.get(k).size());
-    }
-
   }
 
   public Bitmap resizeImage(String imageFilePath, float newScale)
@@ -171,25 +141,10 @@ public class Synesthetizer {
     Bitmap bitmap_orig = BitmapFactory.decodeFile(imageFilePath);
     int bitmapOrigWidth = bitmap_orig.getWidth();
     int bitmapOrigHeight = bitmap_orig.getHeight();
-    //Log.i("foo", "w: " + bitmapOrigWidth + "  h:   " + bitmapOrigHeight);
     int newBitmapWidth = (int)(bitmapOrigWidth * newScale);
     int newBitmapHeight = (int)(bitmapOrigHeight * newScale);
     Bitmap bitmap_resized;
     bitmap_resized = Bitmap.createScaledBitmap(bitmap_orig, newBitmapWidth, newBitmapHeight, false);
-
-    return bitmap_resized;
-  }
-
-  public Bitmap resizeBitmap(Bitmap bitmap, float scale_new)
-  {
-    Bitmap origBitmap = bitmap;
-    int origBitmapWidth = origBitmap.getWidth();
-    int origBitmapHeight = origBitmap.getHeight();
-
-    int newBitmapWidth = (int)(origBitmapWidth * scale_new);
-    int newBitmapHeight = (int)(origBitmapHeight * scale_new);
-    Bitmap bitmap_resized;
-    bitmap_resized = Bitmap.createScaledBitmap(origBitmap, newBitmapWidth, newBitmapHeight, false);
 
     return bitmap_resized;
   }
@@ -229,11 +184,39 @@ public class Synesthetizer {
     }
   }
 
+  private int mapColorToFrequency(int color)
+  {
+    //convert color to hsv
+    float[] hsv = new float[ 3 ];
+    Color.colorToHSV(color, hsv);
+    float hue = hsv[0];
+    float value = hsv[2];
+
+    int numNotesInAScale = 12;
+
+    // Calculate the hue component (this gives the note)
+    float maxHue = 360f;
+    float hue_normalized = hue / maxHue;
+    int hue_component = (int)(hue_normalized * numNotesInAScale);
+
+    // Calculate the value component (this gives the scale)s
+    int value_component_min = 3;
+    int value_component_max = 7;
+    int value_component = (int)(((value * (value_component_max - value_component_min)) + value_component_min) * numNotesInAScale);
+
+    // Determine the associated piano key
+    int pianoKey = hue_component + value_component;
+
+    // Determine that piano key's frequency
+    float exponent = (pianoKey - 49) / 12f;
+    int frequency = (int)(Math.pow(2, exponent) * 440);
+
+    return frequency;
+  }
+
 
   //edited code based on that found at:
   //https://code.google.com/p/hdict/source/browse/src/com/google/io/kmeans/?r=66e5aa096d9b323ac685a41165aa668d90819df5
-
-
   public class DalvikClusterer
   {
     private static final int MAX_LOOP_COUNT = 5;//15;
@@ -253,7 +236,7 @@ public class Synesthetizer {
       Point point;
       distances = new double[points.length];
 
-      // randomly pick some points to be the centroids of the groups, for the first pass
+      // Randomly pick some points to be the centroids of the groups, for the first pass
       this.means = new Point[numClusters];
       for (int i = 0; i < numClusters; ++i) {
         //means[i] = new Point(random.nextInt(width), random.nextInt(height), random.nextInt(depth));
@@ -263,7 +246,7 @@ public class Synesthetizer {
         means[i].cluster = i;
       }
 
-      // initialize data
+      // Initialize data
       for (int i = 0; i < points.length; ++i) {
         distances[i] = Double.MAX_VALUE;
       }
@@ -272,9 +255,8 @@ public class Synesthetizer {
       int[] sumZ = new int[numClusters];
       int[] clusterSizes = new int[numClusters];
 
-      // main loop
+      // Main loop
       while (!converged) {
-        //Log.i("foo", "a");
         dirty = false;
         // compute which group each point is closest to
         for (int i = 0; i < points.length; ++i) {
@@ -291,13 +273,13 @@ public class Synesthetizer {
           }
         }
 
-        // if we did no work, break early (greedy algorithm has converged)
+        // If we did no work, break early (greedy algorithm has converged)
         if (!dirty) {
           converged = true;
           break;
         }
 
-        // compute the new centroids of the groups, since contents have changed
+        // Compute the new centroids of the groups, since contents have changed
         for (int i = 0; i < numClusters; ++i) {
           sumX[i] = sumY[i] = sumZ[i] = clusterSizes[i] = 0;
         }
@@ -311,15 +293,9 @@ public class Synesthetizer {
         }
 
         for (int i = 0; i < numClusters; ++i) {
-          //Log.i("foo", "cluster size for  " + i + ":  " + clusterSizes[i]);
-        }
-
-        for (int i = 0; i < numClusters; ++i) {
-          //Log.d("foo", "loop count internal:  " + String.valueOf(loopCount) + "    i:  " + String.valueOf(i));
-
-          //matt added this if statement to account for bigger numClusters
-          //for big numClusters, it's possible that some clusters don't have any points associated
-          //so their clusterSize is zero, which leads to the division by zero below
+          // Matt added this if statement to account for bigger numClusters
+          // For big numClusters, it's possible that some clusters don't have any points associated
+          // So their clusterSize is zero, which leads to the division by zero below
           if (clusterSizes[i] != 0) {
             means[i].x = (int) (sumX[i] / clusterSizes[i]);
             means[i].y = (int) (sumY[i] / clusterSizes[i]);
@@ -327,39 +303,23 @@ public class Synesthetizer {
           }
         }
 
-        //Log.i("foo", "current loop count:  " + loopCount);
-
-        // bail out after at most MAX_LOOP_COUNT passes
+        // Bail out after at most MAX_LOOP_COUNT passes
         loopCount++;
 
-
         converged = converged || (loopCount > MAX_LOOP_COUNT);
-      }
-      //Log.d("foo", "first cluster:  " + "x "  + String.valueOf(means[0].x) + "    y " + String.valueOf(means[0].y) + "    z " + String.valueOf(means[0].z));
-
-      for (int index_mean=0; index_mean<means.length; index_mean++)
-      {
-        //Log.i("foo", "cluster " + String.valueOf(index_mean) + "   x "  + String.valueOf(means[index_mean].x) + "    y " + String.valueOf(means[index_mean].y) + "    z " + String.valueOf(means[index_mean].z));
       }
 
       for (int i = 0; i < numClusters; ++i) {
         if (clusterSizes[i] == 0)
         {
-          //Log.i("foo", "setting cluster to null <<<<<<<<<<<<<<<<<");
           means[i].x = 0;
           means[i].y = 0;
           means[i].z = 0;
         }
       }
 
-      //Log.i("foo", "loop count:   " + String.valueOf(loopCount));
-      //Log.i("foo", "done clustering");
-
-
-
       return means;
     }
-
 
     //Computes the Cartesian distance between two points.
     private double computeDistance(Point a, Point b) {
@@ -386,4 +346,15 @@ public class Synesthetizer {
     }
   }
 
+  public class PaletteColor {
+    public Integer color;
+    public int clusterIndex;
+    public int toneFrequency;
+
+    public PaletteColor(Integer paletteColor, int paletteClusterIndex, int paletteToneFrequency) {
+      color = paletteColor;
+      clusterIndex = paletteClusterIndex;
+      toneFrequency = paletteToneFrequency;
+    }
+  }
 }
