@@ -26,15 +26,12 @@ public class Recognizer {
   private static final String CAMFIND_API_KEY = "q5QVimyNMzOHw6VEbGOdxjO7bYfCMAOZ";
   private static final int SERVER_SIDE_RECOGNITION_PROCESSING_TIME = 10000;
   private static final String CAMFIND_POST_IMAGE_FILE_NAME = "camFindImageToPost.jpg";
+  public String CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH;
 
   public Recognizer(MainActivity mainActivity) {
     mMainActivity = mainActivity;
-
-    initialize();
-  }
-
-  private void initialize() {
     createObjectRecognitionHotPhrases();
+    CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH = mMainActivity.getExternalFilesDir(null).getAbsolutePath() + "/objectRecognitionCapturedImage.jpg";
   }
 
   private void createObjectRecognitionHotPhrases() {

@@ -24,6 +24,8 @@ import java.util.ArrayList;
  default knower card image when none is present
  help text
  busy indicator
+ remove dependencies for interfaces
+ tap pixel in capturedSynesthizerImage and play tone for that associated cluster
 */
 
 public class MainActivity extends Activity implements Speaker.SpeakerCallback,
@@ -32,7 +34,8 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     Knower.KnowerCallback,
     Recognizer.RecognizerCallback,
     ListenerDisplay.ListenerDisplayCallback,
-    KnowerFragment.KnowerFragmentCallback {
+    KnowerFragment.KnowerFragmentCallback,
+    Synesthetizer.SynesthetizerCallback {
 
   private static final String TAG = "MainActivity";
   private Speaker mSpeaker;
@@ -45,8 +48,6 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   private Synesthetizer mSynesthetizer;
   private static final int CAPTURE_SYNESTHETIZER_IMAGE_REQUEST = 1;
   private static final int CAPTURE_OBJECT_RECOGNITION_IMAGE_REQUEST = 2;
-  private String CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH;
-  private String CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -65,10 +66,8 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     mKnower = new Knower(this);
 
     mRecognizer = new Recognizer(this);
-    CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH = this.getExternalFilesDir(null).getAbsolutePath() + "/objectRecognitionCapturedImage.jpg";
 
     mSynesthetizer = new Synesthetizer(this);
-    CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH = this.getExternalFilesDir(null).getAbsolutePath() + "/synesthetizerCapturedImage.jpg";
 
     mListener = new Listener(this);
     mListenerDisplay = new ListenerDisplay(this);
@@ -141,8 +140,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
       RecognizerFragment recognizerFragment = (RecognizerFragment) getFragmentManager().findFragmentById(R.id.fragmentContainer);
       recognizerFragment.createRecognizerCard(imageFilePath, recognizedObject);
       mSpeaker.speak("This looks like a " + recognizedObject);
-    }
-    else {
+    } else {
       mSpeaker.speak("I'm not sure what that is");
     }
   }
@@ -158,9 +156,9 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
 
     //showRecognizerFragment();
     //captureObjectRecognitionImage();
-    //String imageFilePath = "/storage/emulated/0/Android/data/com.sibigtroth.botimer/files/objectRecognitionCapturedImage.jpg";
-    //String recognizedObject = "purple and black macbook";
-    //onImageRecognitionComplete(imageFilePath, recognizedObject);
+
+    //showSynesthetizerFragment();
+    //captureSynesthetizerImage();
   }
 
   @Override
@@ -185,6 +183,11 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
         Log.d(TAG, "camera capture failure");
       }
     }
+  }
+
+  @Override
+  public void onSynesthetizerImagePaletteExtracted(ArrayList<Synesthetizer.PaletteColor> paletteColors) {
+    getSynesthetizerFragment().loadPalette(paletteColors);
   }
 
 
@@ -232,8 +235,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     String contentString = recognizedSpeech.substring(startIndex, stopIndex);
     if (!contentString.equals("")) {
       mKnower.findFreebaseNodeDataForInputText(contentString);
-    }
-    else {
+    } else {
       mThinker.sayToBot(recognizedSpeech);
     }
   }
@@ -261,7 +263,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   private void captureSynesthetizerImage() {
-    File file = new File(CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
+    File file = new File(mSynesthetizer.CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
     Uri outputFileUri = Uri.fromFile(file);
     Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
     intent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri);
@@ -269,7 +271,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   private void captureObjectRecognitionImage() {
-    File file = new File(CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH);
+    File file = new File(mRecognizer.CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH);
     Uri outputFileUri = Uri.fromFile(file);
     Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
     intent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri);
@@ -277,8 +279,8 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   private void handleCapturedSynesthetizerImage() {
-    mSynesthetizer.synesthetizeImage(CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
-    getSynesthetizerFragment().setCapturedImage(CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
+    mSynesthetizer.synesthetizeImage(mSynesthetizer.CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
+    getSynesthetizerFragment().setCapturedImage(mSynesthetizer.CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH);
   }
 
   private SynesthetizerFragment getSynesthetizerFragment() {
@@ -286,7 +288,7 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
   }
 
   private void handleCapturedObjectRecognitionImage() {
-    mRecognizer.recognizeImage(CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH);
+    mRecognizer.recognizeImage(mRecognizer.CAPTURED_OBJECT_RECOGNITION_IMAGE_FILE_PATH);
   }
 
   private void showRecognizerFragment() {
@@ -307,10 +309,10 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
       SynesthetizerFragment synesthetizerFragment = new SynesthetizerFragment();
       FragmentManager fragmentManager = getFragmentManager();
       FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-      fragmentTransaction.setCustomAnimations(R.anim.fade_in_and_slide_up_fragment, R.anim.fade_out_fragment)
+      fragmentTransaction.setCustomAnimations(R.anim.fade_in_and_slide_up_fragment, R.anim.fade_out_fragment, R.anim.fade_in_fragment, R.anim.fade_out_fragment)
           .replace(R.id.fragmentContainer, synesthetizerFragment)
+          .addToBackStack(null)
           .commit();
     }
   }
-
 }
