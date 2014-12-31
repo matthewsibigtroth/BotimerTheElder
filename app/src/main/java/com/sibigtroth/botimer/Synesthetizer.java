@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -18,19 +19,17 @@ public class Synesthetizer {
   public ArrayList<String> HOT_PHRASES;
   private ArrayList<ArrayList<Point>> mRepresentativeSubClusters;
   private Random mRandom;
+  public String CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH;
+  private static final int SYNESTHETIZER_PALETTE_SIZE = 7;
 
   public Synesthetizer(MainActivity mainActivity) {
     mMainActivity = mainActivity;
-
-    initialize();
+    createSynesthesiaHotPhrases();
+    CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH = mMainActivity.getExternalFilesDir(null).getAbsolutePath() + "/synesthetizerCapturedImage.jpg";
   }
 
   public interface SynesthetizerCallback {
     public void onSynesthetizerImagePaletteExtracted(ArrayList<PaletteColor> paletteColors);
-  }
-
-  private void initialize() {
-    createSynesthesiaHotPhrases();
   }
 
   private void createSynesthesiaHotPhrases() {
@@ -39,18 +38,16 @@ public class Synesthetizer {
     ));
   }
 
-  public void synesthetizeImage(String imageFilePath, int paletteSize) {
-    ArrayList<PaletteColor> paletteColors = determineImagePalette(imageFilePath, paletteSize);
+  public void synesthetizeImage(String imageFilePath) {
+    ArrayList<PaletteColor> paletteColors = determineImagePalette(imageFilePath, SYNESTHETIZER_PALETTE_SIZE);
     mMainActivity.onSynesthetizerImagePaletteExtracted(paletteColors);
   }
 
-  public Point findRepresentativeClusterPointForGivenClusterIndex(int clusterIndex)
-  {
+  public Point findRepresentativeClusterPointForGivenClusterIndex(int clusterIndex) {
     Point point = null;
 
     ArrayList<Point> representativeSubCluster = mRepresentativeSubClusters.get(clusterIndex);
-    if (representativeSubCluster.size() > 0)
-    {
+    if (representativeSubCluster.size() > 0) {
       int randIndex = mRandom.nextInt(representativeSubCluster.size());
       point = representativeSubCluster.get(randIndex);
     }
@@ -58,30 +55,28 @@ public class Synesthetizer {
     return point;
   }
 
-  public ArrayList<PaletteColor> determineImagePalette(String imageFilePath, int paletteSize)
-  {
+  public ArrayList<PaletteColor> determineImagePalette(String imageFilePath, int paletteSize) {
     float newScale = .1f;
     Bitmap resizedBitmap = resizeImage(imageFilePath, newScale);
     BitmapPixel[] bitmapPixels = collectBitmapPixels(resizedBitmap);
     int numPixels = bitmapPixels.length;
     Point[] points = new Point[numPixels];
-    for (int i=0; i<numPixels; i++)
-    {
+    for (int i = 0; i < numPixels; i++) {
       int pixelColor = bitmapPixels[i].color;
       int r = Color.red(pixelColor);
       int g = Color.green(pixelColor);
       int b = Color.blue(pixelColor);
       // Make sure to scale back up the pixel coords (since we scaled down the original image when collecting pixels)
-      float fullSizeImageX = ((float)bitmapPixels[i].x / newScale);
-      float fullSizeImageY = ((float)bitmapPixels[i].y / newScale);
+      float fullSizeImageX = ((float) bitmapPixels[i].x / newScale);
+      float fullSizeImageY = ((float) bitmapPixels[i].y / newScale);
       // Now map these values to the screen size
       // Cheat with hardcoded values
       // TODO: update these values with the correct values (i.e. get screen dims and image dims)
       // Screensize 640, 360
       // Taken picture size 1024 576
-      float scaleFactor = 640f/1024f;
-      int x = (int)(fullSizeImageX * scaleFactor);
-      int y = (int)(fullSizeImageY * scaleFactor);
+      float scaleFactor = 640f / 1024f;
+      int x = (int) (fullSizeImageX * scaleFactor);
+      int y = (int) (fullSizeImageY * scaleFactor);
       Point point = new Point(r, g, b, x, y);
       points[i] = point;
     }
@@ -95,8 +90,7 @@ public class Synesthetizer {
     Point[] rgbColors = dalvikClusterer.cluster(points, numClusters, width, height, depth);
 
     ArrayList<PaletteColor> paletteColors = new ArrayList<>();
-    for (int j=0; j<rgbColors.length; j++)
-    {
+    for (int j = 0; j < rgbColors.length; j++) {
       int r = rgbColors[j].x;
       int g = rgbColors[j].y;
       int b = rgbColors[j].z;
@@ -110,11 +104,9 @@ public class Synesthetizer {
     return paletteColors;
   }
 
-  private void storeRepresentativeSubClusters(Point[] points, Point[] means, DalvikClusterer dalvikClusterer)
-  {
+  private void storeRepresentativeSubClusters(Point[] points, Point[] means, DalvikClusterer dalvikClusterer) {
     mRepresentativeSubClusters = new ArrayList<>();
-    for (int j=0; j<means.length; j++)
-    {
+    for (int j = 0; j < means.length; j++) {
       ArrayList<Point> representativeSubCluster = new ArrayList<>();
       mRepresentativeSubClusters.add(representativeSubCluster);
     }
@@ -122,7 +114,7 @@ public class Synesthetizer {
     double distanceThreshold = 25;//10;
 
     // Loop through all the points
-    for (int i=0; i<points.length; i++) {
+    for (int i = 0; i < points.length; i++) {
       // Get the distance between this point and its cluster mean
       int clusterForThisPoint = points[i].cluster;
       Point meanForThisCluster = means[clusterForThisPoint];
@@ -136,31 +128,27 @@ public class Synesthetizer {
     }
   }
 
-  public Bitmap resizeImage(String imageFilePath, float newScale)
-  {
+  public Bitmap resizeImage(String imageFilePath, float newScale) {
     Bitmap bitmap_orig = BitmapFactory.decodeFile(imageFilePath);
     int bitmapOrigWidth = bitmap_orig.getWidth();
     int bitmapOrigHeight = bitmap_orig.getHeight();
-    int newBitmapWidth = (int)(bitmapOrigWidth * newScale);
-    int newBitmapHeight = (int)(bitmapOrigHeight * newScale);
+    int newBitmapWidth = (int) (bitmapOrigWidth * newScale);
+    int newBitmapHeight = (int) (bitmapOrigHeight * newScale);
     Bitmap bitmap_resized;
     bitmap_resized = Bitmap.createScaledBitmap(bitmap_orig, newBitmapWidth, newBitmapHeight, false);
 
     return bitmap_resized;
   }
 
-  private BitmapPixel[] collectBitmapPixels(Bitmap bitmap)
-  {
+  private BitmapPixel[] collectBitmapPixels(Bitmap bitmap) {
     int bitmapWidth = bitmap.getWidth();
     int bitmapHeight = bitmap.getHeight();
     int numPixels = bitmapWidth * bitmapHeight;
     BitmapPixel[] bitmapPixels = new BitmapPixel[numPixels];
 
     int pixelCounter = 0;
-    for (int x=0; x<bitmapWidth; x++)
-    {
-      for (int y = 0; y < bitmapHeight; y++)
-      {
+    for (int x = 0; x < bitmapWidth; x++) {
+      for (int y = 0; y < bitmapHeight; y++) {
         int color = bitmap.getPixel(x, y);
         bitmapPixels[pixelCounter] = new BitmapPixel(color, x, y);
         pixelCounter += 1;
@@ -170,24 +158,21 @@ public class Synesthetizer {
     return bitmapPixels;
   }
 
-  class BitmapPixel
-  {
+  class BitmapPixel {
     public int color;
     public int x;
     public int y;
 
-    public BitmapPixel(int color, int x, int y)
-    {
+    public BitmapPixel(int color, int x, int y) {
       this.color = color;
       this.x = x;
       this.y = y;
     }
   }
 
-  private int mapColorToFrequency(int color)
-  {
+  private int mapColorToFrequency(int color) {
     //convert color to hsv
-    float[] hsv = new float[ 3 ];
+    float[] hsv = new float[3];
     Color.colorToHSV(color, hsv);
     float hue = hsv[0];
     float value = hsv[2];
@@ -197,19 +182,19 @@ public class Synesthetizer {
     // Calculate the hue component (this gives the note)
     float maxHue = 360f;
     float hue_normalized = hue / maxHue;
-    int hue_component = (int)(hue_normalized * numNotesInAScale);
+    int hue_component = (int) (hue_normalized * numNotesInAScale);
 
     // Calculate the value component (this gives the scale)s
     int value_component_min = 3;
     int value_component_max = 7;
-    int value_component = (int)(((value * (value_component_max - value_component_min)) + value_component_min) * numNotesInAScale);
+    int value_component = (int) (((value * (value_component_max - value_component_min)) + value_component_min) * numNotesInAScale);
 
     // Determine the associated piano key
     int pianoKey = hue_component + value_component;
 
     // Determine that piano key's frequency
     float exponent = (pianoKey - 49) / 12f;
-    int frequency = (int)(Math.pow(2, exponent) * 440);
+    int frequency = (int) (Math.pow(2, exponent) * 440);
 
     return frequency;
   }
@@ -217,15 +202,13 @@ public class Synesthetizer {
 
   //edited code based on that found at:
   //https://code.google.com/p/hdict/source/browse/src/com/google/io/kmeans/?r=66e5aa096d9b323ac685a41165aa668d90819df5
-  public class DalvikClusterer
-  {
+  public class DalvikClusterer {
     private static final int MAX_LOOP_COUNT = 5;//15;
     private double[] distances;
     private final Random random = new Random(System.currentTimeMillis());
     public Point[] means;
 
-    public Point[] cluster(Point[] points, int numClusters, int width, int height, int depth)
-    {
+    public Point[] cluster(Point[] points, int numClusters, int width, int height, int depth) {
       Log.d("foo", "start clustering");
 
       boolean converged = false;
@@ -310,8 +293,7 @@ public class Synesthetizer {
       }
 
       for (int i = 0; i < numClusters; ++i) {
-        if (clusterSizes[i] == 0)
-        {
+        if (clusterSizes[i] == 0) {
           means[i].x = 0;
           means[i].y = 0;
           means[i].z = 0;
@@ -323,12 +305,11 @@ public class Synesthetizer {
 
     //Computes the Cartesian distance between two points.
     private double computeDistance(Point a, Point b) {
-      return Math.sqrt( (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z) );
+      return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
     }
   }
 
-  public static class Point
-  {
+  public static class Point {
     public int x;
     public int y;
     public int z;
@@ -336,8 +317,7 @@ public class Synesthetizer {
     public int x_pixel;
     public int y_pixel;
 
-    public Point(int d, int e, int f, int x_pixel, int y_pixel)
-    {
+    public Point(int d, int e, int f, int x_pixel, int y_pixel) {
       this.x = d;
       this.y = e;
       this.z = f;

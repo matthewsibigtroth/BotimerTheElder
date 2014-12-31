@@ -4,7 +4,6 @@ import android.app.Fragment;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -55,13 +54,8 @@ public class SynesthetizerFragment extends Fragment {
   };
 
   private void onCapturedImageTouched(float x, float y) {
-    Log.d(TAG, "x: " + x + "  y: " + y);
     ImageView imageView = (ImageView) getActivity().findViewById(R.id.synesthetizerCaputuredImage);
-    Log.d(TAG, "w: " + imageView.getWidth() + "  h: " + imageView.getHeight());
-    Log.d(TAG, "scaleX: " + imageView.getScaleX());
     Bitmap bitmap = BitmapFactory.decodeFile(getActivity().getExternalFilesDir(null).getAbsolutePath() + "/synesthetizerCapturedImage.jpg");
-    Log.d(TAG, "bitmap w: " + bitmap.getWidth() + "  h:  " + bitmap.getHeight());
-
   }
 
   public void setCapturedImage(String imageFilePath) {
@@ -73,7 +67,7 @@ public class SynesthetizerFragment extends Fragment {
   public void loadPalette(ArrayList<Synesthetizer.PaletteColor> paletteColors) {
     updatePaletteDisplay(paletteColors);
     updatePaletteTones(paletteColors);
-    //playPaletteTonesInSequence(paletteColors);
+    playPaletteTonesInSequence(paletteColors);
   }
 
   private void updatePaletteDisplay(ArrayList<Synesthetizer.PaletteColor> paletteColors) {
@@ -85,8 +79,7 @@ public class SynesthetizerFragment extends Fragment {
 
   private void updatePaletteTones(ArrayList<Synesthetizer.PaletteColor> paletteColors) {
     mTonePlayer.clearTones();
-    for (int i=0; i<paletteColors.size(); i++)
-    {
+    for (int i = 0; i < paletteColors.size(); i++) {
       int frequency = paletteColors.get(i).toneFrequency;
       float duration = .5f;
       mTonePlayer.createTone(frequency, duration);
@@ -94,7 +87,7 @@ public class SynesthetizerFragment extends Fragment {
   }
 
   private void playPaletteTonesInSequence(ArrayList<Synesthetizer.PaletteColor> paletteColors) {
-    for (int i=0; i<paletteColors.size(); i++) {
+    for (int i = 0; i < paletteColors.size(); i++) {
       int delay = 600 * i + 1000;
       mTonePlayer.playToneAfterDelay(i, delay);
     }

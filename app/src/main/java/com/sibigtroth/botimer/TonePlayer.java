@@ -11,8 +11,7 @@ import java.util.ArrayList;
 //modified version of code found at:
 //http://stackoverflow.com/questions/2413426/playing-an-arbitrary-tone-with-android
 
-public class TonePlayer
-{
+public class TonePlayer {
 
   private int duration = 1; // seconds
   private int sampleRate = 8000;
@@ -36,29 +35,24 @@ public class TonePlayer
   //utilities
   ///////////////////////////
 
-  public void clearTones()
-  {
+  public void clearTones() {
     mTones = new ArrayList<>();
   }
 
-  public void createTone(int frequency, float duration)
-  {
+  public void createTone(int frequency, float duration) {
     Tone tone = new Tone(frequency, duration);
     mTones.add(tone);
   }
 
-  public void playTone(int toneIndex)
-  {
+  public void playTone(int toneIndex) {
     mTones.get(toneIndex).play();
   }
 
-  public void playToneAfterDelay(int toneIndex, int delay)
-  {
+  public void playToneAfterDelay(int toneIndex, int delay) {
     mTones.get(toneIndex).playAfterDelay(delay);
   }
 
-  class Tone
-  {
+  class Tone {
     private float duration; // seconds
     private int sampleRate;
     private int numSamples;
@@ -67,18 +61,16 @@ public class TonePlayer
     private byte[] generatedSnd;
     private AudioTrack audioTrack;
 
-    public Tone(int freqOfTone, float duration)
-    {
+    public Tone(int freqOfTone, float duration) {
       this.freqOfTone = freqOfTone;
       this.duration = duration;
 
       this.Init();
     }
 
-    private void Init()
-    {
+    private void Init() {
       this.sampleRate = 8000;
-      this.numSamples = (int)(duration * sampleRate);
+      this.numSamples = (int) (duration * sampleRate);
       this.sample = new double[numSamples];
       this.generatedSnd = new byte[2 * numSamples];
 
@@ -86,12 +78,9 @@ public class TonePlayer
       this.createAudioTrack();
     }
 
-    public void play()
-    {
-      final Thread thread = new Thread(new Runnable()
-      {
-        public void run()
-        {
+    public void play() {
+      final Thread thread = new Thread(new Runnable() {
+        public void run() {
           audioTrack.release();
           createAudioTrack();
           if (audioTrack.getState() == 1) {
@@ -103,8 +92,7 @@ public class TonePlayer
       thread.start();
     }
 
-    public void playAfterDelay(final int delay)
-    {
+    public void playAfterDelay(final int delay) {
       final Thread thread = new Thread(new Runnable() {
         public void run() {
           //genTone();
@@ -125,10 +113,10 @@ public class TonePlayer
       thread.start();
     }
 
-    void genTone(){
+    void genTone() {
       // fill out the array
       for (int i = 0; i < numSamples; ++i) {
-        sample[i] = Math.sin(2 * Math.PI * i / (sampleRate/freqOfTone));
+        sample[i] = Math.sin(2 * Math.PI * i / (sampleRate / freqOfTone));
       }
 
       // convert to 16 bit pcm sound array
@@ -136,20 +124,20 @@ public class TonePlayer
       int idx = 0;
       int i = 0;
 
-      int ramp = numSamples / 20 ; // Amplitude ramp as a percent of sample count
+      int ramp = numSamples / 20; // Amplitude ramp as a percent of sample count
 
 
-      for (i = 0; i< ramp; ++i) { // Ramp amplitude up (to avoid clicks)
+      for (i = 0; i < ramp; ++i) { // Ramp amplitude up (to avoid clicks)
         double dVal = sample[i];
         // Ramp up to maximum
-        final short val = (short) ((dVal * 32767 * i/ramp));
+        final short val = (short) ((dVal * 32767 * i / ramp));
         // in 16 bit wav PCM, first byte is the low order byte
         generatedSnd[idx++] = (byte) (val & 0x00ff);
         generatedSnd[idx++] = (byte) ((val & 0xff00) >>> 8);
       }
 
 
-      for (i = i; i< numSamples - ramp; ++i) { // Max amplitude for most of the samples
+      for (i = i; i < numSamples - ramp; ++i) { // Max amplitude for most of the samples
         double dVal = sample[i];
         // scale to maximum amplitude
         final short val = (short) ((dVal * 32767));
@@ -158,18 +146,17 @@ public class TonePlayer
         generatedSnd[idx++] = (byte) ((val & 0xff00) >>> 8);
       }
 
-      for (i = i; i< numSamples; ++i) { // Ramp amplitude down
+      for (i = i; i < numSamples; ++i) { // Ramp amplitude down
         double dVal = sample[i];
         // Ramp down to zero
-        final short val = (short) ((dVal * 32767 * (numSamples-i)/ramp ));
+        final short val = (short) ((dVal * 32767 * (numSamples - i) / ramp));
         // in 16 bit wav PCM, first byte is the low order byte
         generatedSnd[idx++] = (byte) (val & 0x00ff);
         generatedSnd[idx++] = (byte) ((val & 0xff00) >>> 8);
       }
     }
 
-    void playSound()
-    {
+    void playSound() {
       Log.i("foo", "playing tone:  " + freqOfTone);
 
       AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
@@ -183,8 +170,7 @@ public class TonePlayer
       audioTrack.play();
     }
 
-    private void createAudioTrack()
-    {
+    private void createAudioTrack() {
       this.audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
           sampleRate,
           AudioFormat.CHANNEL_CONFIGURATION_MONO,
