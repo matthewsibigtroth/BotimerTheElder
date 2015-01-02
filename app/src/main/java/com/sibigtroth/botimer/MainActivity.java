@@ -25,7 +25,7 @@ import java.util.ArrayList;
  help text
  busy indicator
  remove dependencies for interfaces
- tap pixel in capturedSynesthizerImage and play tone for that associated cluster
+ animate palette color when playing its associated tone
 */
 
 public class MainActivity extends Activity implements Speaker.SpeakerCallback,

@@ -17,7 +17,7 @@ public class Synesthetizer {
   private static final String TAG = "Synesthetizer";
   private MainActivity mMainActivity;
   public ArrayList<String> HOT_PHRASES;
-  private ArrayList<ArrayList<Point>> mRepresentativeSubClusters;
+  private ArrayList<Cluster> mRepresentativeClusters;
   private Random mRandom;
   public String CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH;
   private static final int SYNESTHETIZER_PALETTE_SIZE = 7;
@@ -45,50 +45,44 @@ public class Synesthetizer {
 
   public Point findRepresentativeClusterPointForGivenClusterIndex(int clusterIndex) {
     Point point = null;
-
-    ArrayList<Point> representativeSubCluster = mRepresentativeSubClusters.get(clusterIndex);
-    if (representativeSubCluster.size() > 0) {
-      int randIndex = mRandom.nextInt(representativeSubCluster.size());
-      point = representativeSubCluster.get(randIndex);
+    ArrayList<Point> representativeClusterPoints = mRepresentativeClusters.get(clusterIndex).mPoints;
+    if (representativeClusterPoints.size() > 0) {
+      int randIndex = mRandom.nextInt(representativeClusterPoints.size());
+      point = representativeClusterPoints.get(randIndex);
     }
 
     return point;
   }
 
   public ArrayList<PaletteColor> determineImagePalette(String imageFilePath, int paletteSize) {
-    float newScale = .1f;
-    Bitmap resizedBitmap = resizeImage(imageFilePath, newScale);
-    BitmapPixel[] bitmapPixels = collectBitmapPixels(resizedBitmap);
-    int numPixels = bitmapPixels.length;
+    // Scale down the original bitmap to save on cluster finding time
+    float resizeScale = .1f;
+    Bitmap resizedBitmap = resizeImage(imageFilePath, resizeScale);
+    BitmapPixel[] resizedBitmapPixels = collectBitmapPixels(resizedBitmap);
+    int numPixels = resizedBitmapPixels.length;
+    // Collect the pixels and their color for all pixels in the resized bitmap
     Point[] points = new Point[numPixels];
     for (int i = 0; i < numPixels; i++) {
-      int pixelColor = bitmapPixels[i].color;
+      int pixelColor = resizedBitmapPixels[i].color;
       int r = Color.red(pixelColor);
       int g = Color.green(pixelColor);
       int b = Color.blue(pixelColor);
       // Make sure to scale back up the pixel coords (since we scaled down the original image when collecting pixels)
-      float fullSizeImageX = ((float) bitmapPixels[i].x / newScale);
-      float fullSizeImageY = ((float) bitmapPixels[i].y / newScale);
-      // Now map these values to the screen size
-      // Cheat with hardcoded values
-      // TODO: update these values with the correct values (i.e. get screen dims and image dims)
-      // Screensize 640, 360
-      // Taken picture size 1024 576
-      float scaleFactor = 640f / 1024f;
-      int x = (int) (fullSizeImageX * scaleFactor);
-      int y = (int) (fullSizeImageY * scaleFactor);
-      Point point = new Point(r, g, b, x, y);
+      float fullSizeBitmapX = ((float) resizedBitmapPixels[i].x / resizeScale);
+      float fullSizeBitmapY = ((float) resizedBitmapPixels[i].y / resizeScale);
+      Point point = new Point(r, g, b, (int) fullSizeBitmapX, (int) fullSizeBitmapY);
       points[i] = point;
     }
-
+    // Specify the number of clusters to search for
     int numClusters = paletteSize;
+    // Look for clusters in rgb space
     int width = 255;
     int height = 255;
     int depth = 255;
-
+    // Find the clusters
     DalvikClusterer dalvikClusterer = new DalvikClusterer();
     Point[] rgbColors = dalvikClusterer.cluster(points, numClusters, width, height, depth);
-
+    // Collect the colors into a palette
     ArrayList<PaletteColor> paletteColors = new ArrayList<>();
     for (int j = 0; j < rgbColors.length; j++) {
       int r = rgbColors[j].x;
@@ -98,33 +92,44 @@ public class Synesthetizer {
       int frequency = mapColorToFrequency(color);
       paletteColors.add(new PaletteColor(color, j, frequency));
     }
-
-    storeRepresentativeSubClusters(points, dalvikClusterer.means, dalvikClusterer);
+    // Store the clusters for later retrieval
+    storeRepresentativeClusters(points, dalvikClusterer.means, dalvikClusterer);
 
     return paletteColors;
   }
 
-  private void storeRepresentativeSubClusters(Point[] points, Point[] means, DalvikClusterer dalvikClusterer) {
-    mRepresentativeSubClusters = new ArrayList<>();
+  private void storeRepresentativeClusters(Point[] points, Point[] means, DalvikClusterer dalvikClusterer) {
+    // Create the empty clusters
+    mRepresentativeClusters = new ArrayList<>();
     for (int j = 0; j < means.length; j++) {
-      ArrayList<Point> representativeSubCluster = new ArrayList<>();
-      mRepresentativeSubClusters.add(representativeSubCluster);
+      ArrayList<Point> clusterPoints = new ArrayList<>();
+      Point mean = means[j];
+      Cluster cluster = new Cluster(clusterPoints, mean);
+      mRepresentativeClusters.add(cluster);
     }
-
     double distanceThreshold = 25;//10;
-
     // Loop through all the points
     for (int i = 0; i < points.length; i++) {
       // Get the distance between this point and its cluster mean
       int clusterForThisPoint = points[i].cluster;
       Point meanForThisCluster = means[clusterForThisPoint];
       double distanceBetweenThisPointAndClusterMean = dalvikClusterer.computeDistance(points[i], meanForThisCluster);
-
       // If this distance is small enough
       if (distanceBetweenThisPointAndClusterMean <= distanceThreshold) {
         // Add it to the stored representative cluster
-        mRepresentativeSubClusters.get(clusterForThisPoint).add(points[i]);
+        mRepresentativeClusters.get(clusterForThisPoint).mPoints.add(points[i]);
       }
+    }
+  }
+
+  class Cluster {
+
+    ArrayList<Point> mPoints;
+    Point mMean;
+
+    public Cluster(ArrayList<Point> points, Point mean) {
+      mPoints = points;
+      mMean = mean;
     }
   }
 
