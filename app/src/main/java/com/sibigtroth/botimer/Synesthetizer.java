@@ -70,10 +70,10 @@ public class Synesthetizer {
       // Make sure to scale back up the pixel coords (since we scaled down the original image when collecting pixels)
       float fullSizeBitmapX = ((float) resizedBitmapPixels[i].x / resizeScale);
       float fullSizeBitmapY = ((float) resizedBitmapPixels[i].y / resizeScale);
-      Point point = new Point(r, g, b, (int)fullSizeBitmapX, (int)fullSizeBitmapY);
+      Point point = new Point(r, g, b, (int) fullSizeBitmapX, (int) fullSizeBitmapY);
       points[i] = point;
     }
-    // Specify the number of clusters to search fro
+    // Specify the number of clusters to search for
     int numClusters = paletteSize;
     // Look for clusters in rgb space
     int width = 255;

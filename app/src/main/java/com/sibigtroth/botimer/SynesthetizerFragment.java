@@ -10,7 +10,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.util.Log;
@@ -98,7 +97,7 @@ public class SynesthetizerFragment extends Fragment {
     return nearestPaletteColor;
   }
 
-  //Computes the Cartesian distance between two points.
+  // Compute the Cartesian distance between two points.
   private double computeDistance(Synesthetizer.Point a, Synesthetizer.Point b) {
     return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
   }
@@ -120,7 +119,9 @@ public class SynesthetizerFragment extends Fragment {
     public void onAnimationEnd(Animator animation) {
       FrameLayout capturedImageContainer = (FrameLayout) getActivity().findViewById(R.id.capturedImageContainer);
       capturedImageContainer.removeView(mPixelDisplay);
-    };
+    }
+
+    ;
 
     @Override
     public void onAnimationCancel(Animator animation) {
@@ -165,7 +166,7 @@ public class SynesthetizerFragment extends Fragment {
     mPaletteColors = paletteColors;
     updatePaletteDisplay(paletteColors);
     updatePaletteTones(paletteColors);
-    //playPaletteTonesInSequence(paletteColors);
+    playPaletteTonesInSequence(paletteColors);
   }
 
   private void updatePaletteDisplay(ArrayList<Synesthetizer.PaletteColor> paletteColors) {
