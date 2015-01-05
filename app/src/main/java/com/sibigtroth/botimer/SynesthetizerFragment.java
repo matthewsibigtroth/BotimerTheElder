@@ -23,6 +23,7 @@ import android.widget.LinearLayout;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class SynesthetizerFragment extends Fragment {
@@ -65,8 +66,6 @@ public class SynesthetizerFragment extends Fragment {
   };
 
   private void onCapturedImageTouched(float imageViewX, float imageViewY) {
-    Log.d(TAG, "conCapturedImageTouched");
-
     ImageView imageView = (ImageView) getActivity().findViewById(R.id.synesthetizerCaputuredImage);
     Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
     // Map the imageView coords to the correlate bitmap coords
@@ -189,11 +188,22 @@ public class SynesthetizerFragment extends Fragment {
     for (int i = 0; i < paletteColors.size(); i++) {
       int delay = 600 * i + 1000;
       mTonePlayer.playToneAfterDelay(i, delay);
+      // TODO: animate the tone buttons (need handlers with postDelay)
     }
   }
 
   private void playPaletteTone(Synesthetizer.PaletteColor paletteColor) {
     mTonePlayer.playTone(paletteColor.clusterIndex);
+    animatePaletteColorButton(paletteColor);
+  }
+
+  private void animatePaletteColorButton(Synesthetizer.PaletteColor paletteColor) {
+    View paletteColorButton = getPaletteColorButtonWithGivenPaletteColor(paletteColor);
+    ObjectAnimator scaleXObjectAnimator = ObjectAnimator.ofFloat(paletteColorButton, "scaleX", .5f, 1f).setDuration(250);
+    ObjectAnimator scaleYObjectAnimator = ObjectAnimator.ofFloat(paletteColorButton, "scaleY", .5f, 1f).setDuration(250);
+    AnimatorSet animatorSet = new AnimatorSet();
+    animatorSet.playTogether(scaleXObjectAnimator, scaleYObjectAnimator);
+    animatorSet.start();
   }
 
   private void clearPaletteDisplay() {
@@ -211,6 +221,17 @@ public class SynesthetizerFragment extends Fragment {
     paletteColorButton.setOnClickListener(paletteColorButtonOnClickListener);
     getPaletteColorButtonsContainer().addView(paletteColorButton);
     mPaletteColorButtonToPaletteColor.put(paletteColorButton, paletteColor);
+  }
+
+  private View getPaletteColorButtonWithGivenPaletteColor(Synesthetizer.PaletteColor paletteColorToFind) {
+    for (HashMap.Entry<View, Synesthetizer.PaletteColor> entry : mPaletteColorButtonToPaletteColor.entrySet()) {
+      View paletteColorButton = entry.getKey();
+      Synesthetizer.PaletteColor paletteColor = entry.getValue();
+      if (paletteColor.equals(paletteColorToFind)) {
+        return paletteColorButton;
+      }
+    }
+    return null;
   }
 
   class PixelDisplay extends View {
