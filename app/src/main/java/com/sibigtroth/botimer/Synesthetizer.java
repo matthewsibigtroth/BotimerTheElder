@@ -210,6 +210,11 @@ public class Synesthetizer {
   }
   */
 
+  // Version 2
+  // Uses a given scale for the mapping
+  // Hue is used to determine the note in the scale
+  // Value is used to determine the harmonic of the note
+  // f = note * harmonic
   private int mapColorToFrequency(int color) {
     //convert color to hsv
     float[] hsv = new float[3];
