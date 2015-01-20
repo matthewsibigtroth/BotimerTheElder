@@ -21,6 +21,7 @@ public class Synesthetizer {
   private Random mRandom;
   public String CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH;
   private static final int SYNESTHETIZER_PALETTE_SIZE = 7;
+  private static final float[] C_MAJOR_SCALE = new float[]{32.7032f, 36.7081f, 41.2034f, 43.6535f, 48.9994f, 55.0000f, 61.7354f}; // C, D, E, F, G, A, B
 
   public Synesthetizer(MainActivity mainActivity) {
     mMainActivity = mainActivity;
@@ -175,6 +176,10 @@ public class Synesthetizer {
     }
   }
 
+  /*
+  // Version 1
+  // Linearly maps rgb to frequency
+  // f = (normalizedHue * numNotesInAScale) * value
   private int mapColorToFrequency(int color) {
     //convert color to hsv
     float[] hsv = new float[3];
@@ -203,7 +208,37 @@ public class Synesthetizer {
 
     return frequency;
   }
+  */
 
+  // Version 2
+  // Uses a given scale for the mapping
+  // Hue is used to determine the note in the scale
+  // Value is used to determine the harmonic of the note
+  // f = note * harmonic
+  private int mapColorToFrequency(int color) {
+    //convert color to hsv
+    float[] hsv = new float[3];
+    Color.colorToHSV(color, hsv);
+    float hue = hsv[0];
+    float value = hsv[2];
+
+    // Calculate the note
+    float maxHue = 360f;
+    float normalizedHue = hue / maxHue;
+    int numNotesInScale = C_MAJOR_SCALE.length;
+    int noteIndex = (int)(normalizedHue * numNotesInScale);
+    float note = C_MAJOR_SCALE[noteIndex];
+
+    // Calculate the harmonic
+    int minHarmonic = 3;
+    int maxHarmonic = 10;
+    int harmonic = (int) (((value * (maxHarmonic - minHarmonic)) + minHarmonic));
+
+    // Calculate the frequency
+    int frequency = (int)(note * harmonic);
+
+    return frequency;
+  }
 
   //edited code based on that found at:
   //https://code.google.com/p/hdict/source/browse/src/com/google/io/kmeans/?r=66e5aa096d9b323ac685a41165aa668d90819df5
