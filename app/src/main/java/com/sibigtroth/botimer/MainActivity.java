@@ -152,8 +152,6 @@ public class MainActivity extends Activity implements Speaker.SpeakerCallback,
     //showKnowledgeFragment();
     //mKnower.findFreebaseNodeDataForInputText("science");
 
-    //captureSynesthetizerImage();
-
     //showRecognizerFragment();
     //captureObjectRecognitionImage();
 
