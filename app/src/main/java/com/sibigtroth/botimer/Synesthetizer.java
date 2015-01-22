@@ -22,6 +22,8 @@ public class Synesthetizer {
   public String CAPTURED_SYNESTHETIZER_IMAGE_FILE_PATH;
   private static final int SYNESTHETIZER_PALETTE_SIZE = 7;
   private static final float[] C_MAJOR_SCALE = new float[]{32.7032f, 36.7081f, 41.2034f, 43.6535f, 48.9994f, 55.0000f, 61.7354f}; // C, D, E, F, G, A, B
+  private static final int MIN_HARMONIC = 9;
+  private static final int MAX_HARMONIC = 14;
 
   public Synesthetizer(MainActivity mainActivity) {
     mMainActivity = mainActivity;
@@ -230,8 +232,8 @@ public class Synesthetizer {
     float note = C_MAJOR_SCALE[noteIndex];
 
     // Calculate the harmonic
-    int minHarmonic = 3;
-    int maxHarmonic = 10;
+    int minHarmonic = MIN_HARMONIC;
+    int maxHarmonic = MAX_HARMONIC;
     int harmonic = (int) (((value * (maxHarmonic - minHarmonic)) + minHarmonic));
 
     // Calculate the frequency
@@ -243,7 +245,7 @@ public class Synesthetizer {
   //edited code based on that found at:
   //https://code.google.com/p/hdict/source/browse/src/com/google/io/kmeans/?r=66e5aa096d9b323ac685a41165aa668d90819df5
   public class DalvikClusterer {
-    private static final int MAX_LOOP_COUNT = 5;//15;
+    private static final int MAX_LOOP_COUNT = 10;//15;
     private double[] distances;
     private final Random random = new Random(System.currentTimeMillis());
     public Point[] means;
