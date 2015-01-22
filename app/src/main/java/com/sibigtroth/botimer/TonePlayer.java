@@ -21,6 +21,7 @@ public class TonePlayer {
   private byte generatedSnd[] = new byte[2 * numSamples];
   Handler handler = new Handler();
   private ArrayList<Tone> mTones;
+  private static final float VOLUME = .6f;
 
   public TonePlayer() {
     mTones = new ArrayList<>();
@@ -84,7 +85,7 @@ public class TonePlayer {
           audioTrack.release();
           createAudioTrack();
           if (audioTrack.getState() == 1) {
-            audioTrack.setStereoVolume(.3f, .3f);
+            audioTrack.setStereoVolume(VOLUME, VOLUME);
             audioTrack.play();
           }
         }
@@ -102,7 +103,7 @@ public class TonePlayer {
               audioTrack.release();
               createAudioTrack();
               if (audioTrack.getState() == 1) {
-                audioTrack.setStereoVolume(.3f, .3f);
+                audioTrack.setStereoVolume(VOLUME, VOLUME);
                 audioTrack.play();
               }
 
